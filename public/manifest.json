@@ -1,0 +1,22 @@
+{
+  "name": "GigsUniverse",
+  "short_name": "GigsUniverse",
+  "description": "A platform to discover and manage worldwide gigs.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/Universe-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icons/Universe-192.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
