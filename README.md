@@ -23,3 +23,4 @@ tunnels:
       - "username:password"
 
 ## ENV
+Acquiring the gmail certificate (TLS) - Need Validate So It could Work

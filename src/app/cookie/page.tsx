@@ -225,7 +225,7 @@ export default function CookiesPage() {
                   </p>
                   <div className="bg-gray-50 p-6 rounded-lg">
                     <p className="text-gray-600 mb-2">
-                      <strong>Email:</strong> admin@gigsuniverse.com
+                      <strong>Email:</strong> admin@gigsuniverse.studio
                     </p>
                     <p className="text-gray-600 mb-2">
                       <strong>Phone:</strong> +60 11-2345 6789

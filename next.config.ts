@@ -1,7 +1,6 @@
 import withPWA from 'next-pwa';
 
 const nextConfig = {
-  // Add more Next.js options here if needed
 };
 
 // Export the configuration with PWA support

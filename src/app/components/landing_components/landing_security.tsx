@@ -5,7 +5,7 @@ export default function LandingSecurity() {
     {
       icon: <UserCheck className="w-6 h-6" />,
       title: "Identity Verification",
-      description: "Users in the platform are encouraged to verify their identity",
+      description: "Users in the platform are required to verify their real identity",
     },
     {
       icon: <Shield className="w-6 h-6" />,

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Link as LinkIcon } from "lucide-react";
+import Link from "next/link";
 
 export default function LandingCTA() {
   return (
@@ -11,20 +12,24 @@ export default function LandingCTA() {
             Join thousands of professionals who have found their perfect gig work through GigsUniverse.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              size="lg"
-              className="bg-black text-white hover:bg-gray-800 px-8 py-3 text-lg hover:scale-105 transition-all duration-300"
-            >
-              Get Started Today
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="bg-white text-black border-black hover:bg-black hover:text-white px-8 py-3 text-lg hover:scale-105 transition-all duration-300"
-            >
-              Learn More
-            </Button>
+            <Link href="/register">
+              <Button
+                size="lg"
+                className="bg-black cursor-pointer text-white hover:bg-gray-800 px-8 py-3 text-lg hover:scale-105 transition-all duration-300"
+              >
+                Get Started Today
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+            </Link>
+            <Link href="/faq">
+              <Button
+                size="lg"
+                variant="outline"
+                className="bg-white cursor-pointer text-black border-black hover:bg-black hover:text-white px-8 py-3 text-lg hover:scale-105 transition-all duration-300"
+              >
+                Learn More
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

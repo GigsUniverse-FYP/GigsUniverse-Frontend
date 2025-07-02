@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { CheckCircle } from "lucide-react"
+import Link from "next/link"
 import { useState } from "react"
 
 export default function LandingSubscription() {
@@ -160,16 +161,19 @@ export default function LandingSubscription() {
                       ))}
                     </ul>
 
+                  <Link href="/register/freelancer">
                     <Button
-                      className={`w-full hover:scale-105 transition-all duration-300 ${
+                      className={`w-full cursor-pointer hover:scale-105 transition-all duration-300 ${
                         plan.popular
                           ? "bg-black text-white hover:bg-gray-800"
-                          : "bg-white text-black border border-black hover:bg-black hover:text-white"
+                          : "bg-white text-black border border-black hover:bg-black hover:text-white cursor-pointer"
                       }`}
                       size="lg"
                     >
                       {plan.buttonText}
                     </Button>
+                  </Link>
+
                   </CardContent>
                 </Card>
               ))}
@@ -210,17 +214,18 @@ export default function LandingSubscription() {
                         </li>
                       ))}
                     </ul>
-
-                    <Button
-                      className={`w-full hover:scale-105 transition-all duration-300 ${
-                        plan.popular
-                          ? "bg-black text-white hover:bg-gray-800"
-                          : "bg-white text-black border border-black hover:bg-black hover:text-white"
-                      }`}
-                      size="lg"
-                    >
-                      {plan.buttonText}
-                    </Button>
+                    <Link href="/register/employer">
+                      <Button
+                        className={`w-full cursor-pointer hover:scale-105 transition-all duration-300 ${
+                          plan.popular
+                            ? "bg-black text-white hover:bg-gray-800"
+                            : "bg-white text-black border border-black hover:bg-black hover:text-white"
+                        }`}
+                        size="lg"
+                      >
+                        {plan.buttonText}
+                      </Button>
+                    </Link>
                   </CardContent>
                 </Card>
               ))}

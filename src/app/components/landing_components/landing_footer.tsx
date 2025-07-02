@@ -80,7 +80,7 @@ export default function LandingFooter() {
                 <div className="w-5 h-5 bg-gray-600 rounded flex items-center justify-center">
                   <span className="text-xs">📧</span>
                 </div>
-                <span className="text-gray-300">admin@gigsuniverse.com</span>
+                <span className="text-gray-300">admin@gigsuniverse.studio</span>
               </div>
               <div className="flex items-center space-x-3 hover:scale-105 transition-transform duration-300">
                 <div className="w-5 h-5 bg-gray-600 rounded flex items-center justify-center">

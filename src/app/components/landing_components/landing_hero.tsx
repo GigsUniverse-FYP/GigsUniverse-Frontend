@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play } from "lucide-react";
+import { ArrowRight, Link as LinkIcon, Play } from "lucide-react";
+import Link from "next/link";
 
 export default function LandingHero() {
   return (
@@ -40,20 +41,24 @@ export default function LandingHero() {
             world.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in-up animation-delay-600">
-            <Button
-              size="lg"
-              className="bg-white text-black hover:bg-gray-200 px-8 py-3 text-lg hover:scale-105 transition-all duration-300"
-            >
-              Find Your Next Gig
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="bg-transparent text-white border-white hover:bg-white hover:text-black px-8 py-3 text-lg hover:scale-105 transition-all duration-300"
-            >
-              Post a Job
-            </Button>
+            <Link href="/login/freelancer">
+              <Button
+                size="lg"
+                className="bg-white cursor-pointer text-black hover:bg-gray-200 px-8 py-3 text-lg hover:scale-105 transition-all duration-300"
+              >
+                Find Your Next Gig
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+            </Link>
+            <Link href="/login/employer">
+              <Button
+                size="lg"
+                variant="outline"
+                className="bg-transparent cursor-pointer text-white border-white hover:bg-white hover:text-black px-8 py-3 text-lg hover:scale-105 transition-all duration-300"
+              >
+                Post a Job
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

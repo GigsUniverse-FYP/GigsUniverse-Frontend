@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Briefcase, Users, Target, Award } from "lucide-react"
+import Link from "next/link"
 
 export default function HowItWorksEmployers() {
   const steps = [
@@ -63,12 +64,14 @@ export default function HowItWorksEmployers() {
         </div>
 
         <div className="text-center mt-12 animate-fade-in-up animation-delay-400">
-          <Button
-            size="lg"
-            className="bg-black text-white hover:bg-gray-800 px-8 py-3 hover:scale-105 transition-all duration-300"
-          >
-            Post Your First Job
-          </Button>
+          <Link href="/register/employer">
+            <Button
+              size="lg"
+              className="bg-black text-white cursor-pointer hover:bg-gray-800 px-8 py-3 hover:scale-105 transition-all duration-300"
+            >
+              Post Your First Job
+            </Button>
+          </Link>
         </div>
       </div>
     </section>

@@ -27,7 +27,7 @@ export default function LandingHeader() {
     },
     {
       question: "How does verification work?",
-      answer: "We verify all users through ID verification, job experiences and portfolio reviews to ensure quality.",
+      answer: "We verify all users through ID verification and job experiences to ensure quality.",
     },
   ]
 

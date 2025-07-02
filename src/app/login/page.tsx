@@ -1,9 +1,42 @@
+'use client'
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, Briefcase, Shield, ArrowLeft } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 
 export default function HomePage() {
+  const router = useRouter();
+
+  // check whether JWT exists
+  useEffect(() => {
+    const checkJWT = async () => {
+      try {
+        const res = await fetch("http://localhost:8080/api/auth/verify-token", {
+          credentials: "include",
+        })
+
+        if (res.ok) {
+          const data = await res.json()
+          if (data.role === "freelancer") {
+            router.replace("/dashboard/freelancer")
+          } else if (data.role === "employer") {
+            router.replace("/dashboard/employer")
+          } else if (data.role === "admin") {
+            router.replace("/dashboard/admin")
+          }else{
+            router.replace("/login")
+          }
+        }
+      } catch (err) {
+        router.replace("/login")
+      }
+    }
+
+    checkJWT()
+  }, [router])
+
   return (
     <div className="min-h-screen bg-white">
             <header className="border-b border-gray-200 sticky top-0 z-50 backdrop-blur-sm bg-white/95">
@@ -18,7 +51,7 @@ export default function HomePage() {
             <Link href="/">
               <Button
                 variant="outline"
-                className="bg-white text-black border-black hover:bg-black hover:text-white hover:scale-105 transition-all duration-300"
+                className="bg-white text-black cursor-pointer border-black hover:bg-black hover:text-white hover:scale-105 transition-all duration-300"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Home

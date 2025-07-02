@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,27 +10,126 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Users, Eye, EyeOff, ArrowLeft } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export default function FreelancerLogin() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
+  const router = useRouter();
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  useEffect(() => {
+    const checkJWT = async () => {
+      try {
+        const res = await fetch("http://localhost:8080/api/auth/verify-token", {
+          credentials: "include",
+        })
+
+        if (res.ok) {
+          const data = await res.json()
+          if (data.role === "freelancer") {
+            router.replace("/dashboard/freelancer")
+          } else if (data.role === "employer") {
+            router.replace("/dashboard/employer")
+          } else if (data.role === "admin") {
+            router.replace("/dashboard/admin")
+          }else{
+            router.replace("/login/freelancer")
+          }
+        }
+      } catch (err) {
+        router.replace("/login/freelancer")
+      }
+    }
+
+    checkJWT()
+  }, [router])
+  
+  
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
-      // Handle login logic here
-    }, 1000)
+    // Check Validity of Email
+    const checkRes = await fetch(
+      `${backendURL}/api/auth/freelancer/check-email?email=${encodeURIComponent(formData.email)}`
+    )
+
+    if (!checkRes.ok) {
+      setError("No account found with this email address.")
+      setIsLoading(false);
+      return
+    }
+
+    // Check Registration Provider
+    const checkProvider = await fetch(
+      `${backendURL}/api/auth/freelancer/check-provider?email=${encodeURIComponent(formData.email)}`
+    )
+    if (checkProvider.status === 404) {
+      setError("No account found with this email address.")
+      setIsLoading(false);
+      return;
+    }else if (checkProvider.status === 403) {
+      const text = await checkProvider.text();
+      setError("Account registered with Google. Use Google login.");
+      setIsLoading(false);
+      return;
+    }else if (!checkProvider.ok) {
+      const text = await checkProvider.text();
+      setError("Unexpected error during provider check.");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${backendURL}/api/auth/freelancer/email-login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const resultText = await response.text();
+
+      if (!response.ok) {
+        if (resultText === "Email and password are required.") {
+          setError("Please fill up your email and password.");
+          setIsLoading(false);
+        } else if (resultText === "Invalid email or password.") {
+          setError("Invalid Login Credentials.");
+          setIsLoading(false);
+        } else if (resultText === "Login failed. Please try again.") {
+          setError("Network error occurs. Please try again.");
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      router.push(`/dashboard/freelancer`);
+
+    } catch (error) {
+      setError("Network error. Please try again.");
+      setIsLoading(false);
+    } finally {
+      setIsLoading(false);
+    }
+
   }
 
   const handleGoogleLogin = () => {
-    // Handle Google login logic here
-    console.log("Google login for freelancer")
+    window.location.href = `${backendURL}/oauth2/authorization/google-freelancer-login`;
   }
 
   return (
@@ -86,6 +185,8 @@ export default function FreelancerLogin() {
                     id="email"
                     type="email"
                     placeholder="freelancer@example.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     required
                     className="border-gray-300 focus:border-gray-500"
                   />
@@ -100,6 +201,8 @@ export default function FreelancerLogin() {
                       id="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       required
                       className="border-gray-300 focus:border-gray-500 pr-10"
                     />
@@ -164,14 +267,14 @@ export default function FreelancerLogin() {
 
               <div className="mt-6 space-y-4">
                 <div className="text-center">
-                  <Link href="/forgot-password" className="text-sm text-gray-600 hover:text-gray-900">
+                  <Link href="/login/freelancer/forgot-password" className="text-sm text-gray-600 hover:text-gray-900">
                     Forgot your password?
                   </Link>
                 </div>
 
                 <div className="text-center text-sm text-gray-600">
                   {"Don't have an account? "}
-                  <Link href="/signup/freelancer" className="text-gray-900 hover:text-black font-medium">
+                  <Link href="/register/freelancer" className="text-gray-900 hover:text-black font-medium">
                     Sign up as Freelancer
                   </Link>
                 </div>

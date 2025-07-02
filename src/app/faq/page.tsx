@@ -16,7 +16,7 @@ export default function FAQPage() {
         {
           question: "How do I create an account on GigsUniverse?",
           answer:
-            "Simply click the 'Register' button, fill in your details, verify your email, and construct your professional profile. This process might take around 10-15 minutes.",
+            "Simply click the 'Register' button, fill in your details, verify your email and identity then construct your professional profile. This process might take around 10-15 minutes.",
         },
         {
           question: "Is GigsUniverse free to use?",
@@ -33,6 +33,41 @@ export default function FAQPage() {
           answer:
             "Complete your profile, upload a government-issued ID or any relevant documents while ensure it is not expired. Our team reviews applications within 24-48 hours.",
         },
+        {
+          question: "How do I reset my password?",
+          answer:
+            "Click 'Forgot Password' on the login page, enter your email, and follow the instructions in the password reset email. If you don't receive it, check your spam folder or contact support.",
+        },
+        {
+          question: "Can I create multiple accounts in GigsUniverse?",
+          answer:
+            "No, creating multiple accounts is against our terms of service. Each user should have only one account for each role to maintain the integrity of the platform. This means that a user can create a freelancer profile and employer profile with similar email only.",
+        },
+        {
+          question: "How does the verification work?",
+          answer: 
+            "The verification will be handled by our third party organization 'Sumsub'. It includes process like KYC for Freelancer and Employer and KYB for Company profile."
+        },
+        {
+          question: "What will happen if I unable to verify my identity?",
+          answer:
+            "If you are unable to verify your identity, you will not be able to access the platform. You can contact our support team for assistance as facing any issues in verification. This is to ensure a secure and trustworthy environment.",
+        },
+        {
+          question: "What will happen if I break the T&C of GigsUniverse?",
+          answer:
+            "If you break the terms and conditions of GigsUniverse, your account may be suspended or permanently banned. We take violations seriously to maintain a safe and professional community.",
+        },
+        {
+          question: "What currency does the platform support?",
+          answer:
+            "GigsUniverse support USD as the main and standard currency. Other currencies or cryptocurrencies may be supported in the future based on user demand. All transactions are processed in USD to ensure consistency.",
+        },
+        {
+          question: "What platform do the freelancers and employers use in payment?",
+          answer:
+            "GigsUniverse uses Stripe as the payment processor. While users will be required to create a Stripe Express Account to receive payouts in the dashboard.",
+        }
       ],
     },
     {
@@ -96,7 +131,7 @@ export default function FAQPage() {
         {
           question: "How do you prevent scams?",
           answer:
-            "We use government-issued ID verification and escrow protection system to minimize frauds. Users are encouraged to pass our verification process before accessing the platform.",
+            "We use government-issued ID verification and escrow protection system to minimize frauds. Users are mandated to pass our verification process before accessing the platform.",
         },
         {
           question: "Is my payment information secure?",
@@ -111,8 +146,13 @@ export default function FAQPage() {
         {
           question: "How do you verify user identities?",
           answer:
-            "We require government-issued ID verification, phone number and, email confirmation. Some users also might undergo video verification calls.",
+            "We require government-issued ID, passport or any relevant legal documents. Some users also might undergo video verification.",
         },
+        {
+          question: "What happens if I notice suspicious activity?",
+          answer:
+            "If you notice any suspicious activity, please report it immediately to our support team via support ticket. We take security seriously and will investigate any reports of fraud or abuse.",
+        }
       ],
     },
     {
@@ -239,7 +279,7 @@ export default function FAQPage() {
                   </div>
                   <div className="text-left">
                     <p className="font-semibold text-black">Email Support</p>
-                    <p className="text-gray-600 text-sm">admin@gigsuniverse.com</p>
+                    <p className="text-gray-600 text-sm">admin@gigsuniverse.studio</p>
                   </div>
                 </div>
 
