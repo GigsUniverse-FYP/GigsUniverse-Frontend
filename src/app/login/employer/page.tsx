@@ -67,6 +67,16 @@ export default function EmployerLogin() {
       return
     }
 
+    const checkStatus = await fetch(
+      `${backendURL}/api/auth/employer/check-registration-status?email=${encodeURIComponent(formData.email)}`
+    )
+
+    if(!checkStatus.ok) {
+      setError("Email not verified. Please check your email for verification link.");
+      setIsLoading(false);
+      return;
+    }
+
     // Check Registration Provider
     const checkProvider = await fetch(
       `${backendURL}/api/auth/employer/check-provider?email=${encodeURIComponent(formData.email)}`

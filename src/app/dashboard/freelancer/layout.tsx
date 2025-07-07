@@ -1,38 +1,43 @@
-import { cookies } from "next/headers"
-import { redirect } from "next/navigation"
+import HoverSidebar from "@/app/components/freelancer_components/freelancer_navigator";
+import { cookies, headers } from "next/headers"
+import { redirect, usePathname } from "next/navigation"
+import ClientLayoutWrapper from "./client-layout-wrapper";
 
 export default async function FreelancerLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = await cookies()
-  const jwt = cookieStore.get("jwt")?.value
 
-  const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
+  // const cookieStore = await cookies()
+  // const jwt = cookieStore.get("jwt")?.value
 
-  if (!jwt) {
-    redirect("/login/freelancer")
-  }
+  // const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-  const res = await fetch(`${backendURL}/api/auth/verify-token`, {
-    headers: {
-      Cookie: `jwt=${jwt}`,
-    },
-    cache: "no-store",
-  })
+  // if (!jwt) {
+  //   redirect("/login/freelancer")
+  // }
 
-  if (!res.ok) {
-    redirect("/login/freelancer")
-  }
+  // const res = await fetch(`${backendURL}/api/auth/verify-token`, {
+  //   headers: {
+  //     Cookie: `jwt=${jwt}`,
+  //   },
+  //   cache: "no-store",
+  // })
 
-  const user = await res.json()
+  // if (!res.ok) {
+  //   redirect("/login/freelancer")
+  // }
 
-  if (user.role !== "freelancer") {
-    if (user.role === "employer") {
-      redirect("/dashboard/employer")
-    } else if (user.role === "admin") {
-      redirect("/dashboard/admin")
-    } else {
-      redirect("/login")
-    }
-  }
+  // const user = await res.json()
 
-  return <>{children}</>
+  // if (user.role !== "freelancer") {
+  //   if (user.role === "employer") {
+  //     redirect("/dashboard/employer")
+  //   } else if (user.role === "admin") {
+  //     redirect("/dashboard/admin")
+  //   } else {
+  //     redirect("/login")
+  //   }
+  // }
+
+
+  return <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
+
 }
