@@ -27,6 +27,17 @@ import {
   Banknote,
   Building2,
 } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const menuItems = [
   {
@@ -89,6 +100,33 @@ interface HoverSidebarProps {
   onMobileClose?: () => void
 }
 
+function LogoutDialog({
+  children,
+  onConfirm,
+}: {
+  children: React.ReactNode;
+  onConfirm: () => void;
+}) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
+      <AlertDialogContent className="sm:max-w-[425px]">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to log out? You will be redirected to the
+            login page.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm}>Logout</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 export default function HoverSidebar({ isMobileOpen = false, onMobileClose }: HoverSidebarProps) {
   const pathname = usePathname()
   const [isHovered, setIsHovered] = useState(false)
@@ -97,8 +135,6 @@ export default function HoverSidebar({ isMobileOpen = false, onMobileClose }: Ho
 
   // This would come from user data/context
   const userPlan = "premium" // or "default"
-
-  const isSettingsActive = settingsMenuItems.some((item) => pathname === item.href)
 
   const handleMobileToggle = () => {
     setMobileOpen(!mobileOpen)
@@ -112,6 +148,20 @@ export default function HoverSidebar({ isMobileOpen = false, onMobileClose }: Ho
   const toggleMoreSettings = () => {
     setShowMoreSettings(!showMoreSettings)
   }
+
+  const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;  
+
+  const handleLogout = async () => {
+    try {
+      await fetch(`${backendURL}/api/auth/logout`, {
+        method: "GET",
+        credentials: "include",
+      });
+      window.location.href = "/login/employer";
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
+  };
 
   return (
     <TooltipProvider>
@@ -263,16 +313,25 @@ export default function HoverSidebar({ isMobileOpen = false, onMobileClose }: Ho
                   </TooltipContent>
                 </Tooltip>
 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button size="icon" variant="ghost" className="w-8 h-8 rounded-xl">
-                      <LogOut className="w-4 h-4 text-gray-600" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="bg-black text-white rounded-xl">
-                    <p>Logout</p>
-                  </TooltipContent>
-                </Tooltip>
+                <LogoutDialog onConfirm={handleLogout}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="w-8 h-8 rounded-xl"
+                      >
+                        <LogOut className="w-4 h-4 text-gray-600" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="right"
+                      className="bg-black text-white rounded-xl"
+                    >
+                      <p>Logout</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </LogoutDialog>
               </div>
             </div>
           )}
@@ -337,13 +396,15 @@ export default function HoverSidebar({ isMobileOpen = false, onMobileClose }: Ho
                   })}
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-gray-600 hover:text-black hover:bg-gray-100 rounded-xl h-9"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                <span className="text-sm">Logout</span>
-              </Button>
+              <LogoutDialog onConfirm={handleLogout}>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-gray-600 hover:text-black hover:bg-gray-100 rounded-xl h-9"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  <span className="text-sm">Logout</span>
+                </Button>
+              </LogoutDialog>
             </div>
           </div>
         </div>
@@ -487,14 +548,16 @@ export default function HoverSidebar({ isMobileOpen = false, onMobileClose }: Ho
                 </Button>
               </div>
             </div>
-
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-gray-600 hover:text-black hover:bg-gray-100 rounded-xl h-9"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              <span className="text-sm">Logout</span>
-            </Button>
+            {/* Logout Button for mobile drawer */}
+            <LogoutDialog onConfirm={handleLogout}>
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-gray-600 hover:text-black hover:bg-gray-100 rounded-xl h-9"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                <span className="text-sm">Logout</span>
+              </Button>
+            </LogoutDialog>
           </div>
         </div>
       </div>

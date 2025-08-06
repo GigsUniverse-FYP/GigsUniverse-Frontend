@@ -1,14 +1,25 @@
-import withPWA from 'next-pwa';
+import createPWA from 'next-pwa';
+import type { NextConfig } from 'next';
 
-const nextConfig = {
-};
-
-// Export the configuration with PWA support
-export default withPWA({
+// Create PWA configuration separately
+const pwaConfig = {
   dest: 'public',
   disable: process.env.NODE_ENV === 'development',
   register: true,
   skipWaiting: true,
-})(nextConfig); 
+};
 
+// Create withPWA enhancer function
+const withPWA = createPWA(pwaConfig);
 
+// Define Next.js configuration
+const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb'
+    }
+  }
+};
+
+// Apply PWA enhancement
+export default withPWA(nextConfig);

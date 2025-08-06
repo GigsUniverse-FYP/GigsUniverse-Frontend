@@ -109,7 +109,7 @@ export default function FreelancerSignup() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          freelancerUserId: formData.id,
+          freelancerUserId: `${formData.id}@gigsuniverse.freelancer`,
           email: formData.email,
           password: formData.password,
         }),

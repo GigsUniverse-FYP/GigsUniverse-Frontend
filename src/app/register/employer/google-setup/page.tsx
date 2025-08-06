@@ -39,8 +39,9 @@ export default function EmployerGoogleSetup() {
 
     const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
+    const fullId = `${id}@gigsuniverse.freelancer`;
     try {
-      const checkRes = await fetch(`${backendURL}/api/auth/employer/check-id?id=${id}`, {
+      const checkRes = await fetch(`${backendURL}/api/auth/employer/check-id?id=${fullId}`, {
         credentials: "include",
       })
 
@@ -56,7 +57,7 @@ export default function EmployerGoogleSetup() {
       }
 
       // Redirect to OAuth2 init
-      window.location.href = `${backendURL}/api/auth/employer/oauth2-init?id=${encodeURIComponent(id)}`
+      window.location.href = `${backendURL}/api/auth/employer/oauth2-init?id=${encodeURIComponent(fullId)}`
     } catch (err) {
       console.error(err)
       setError("Failed to verify ID. Please try again.")
@@ -101,7 +102,7 @@ export default function EmployerGoogleSetup() {
               </div>
               <CardTitle className="text-2xl text-gray-900">Choose Your Employer ID</CardTitle>
               <CardDescription className="text-gray-600">
-                Set up your unique company ID before continuing with Google
+                Set up your unique employer ID before continuing with Google
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -121,7 +122,7 @@ export default function EmployerGoogleSetup() {
 
                 <div className="space-y-2">
                   <Label htmlFor="id" className="text-gray-700">
-                    Company ID
+                    Employer ID
                   </Label>
                   <div className="relative">
                     <Input
@@ -147,7 +148,7 @@ export default function EmployerGoogleSetup() {
                 <div className="bg-green-50 border border-green-200 rounded-md p-4">
                   <h4 className="font-medium text-green-900 mb-2">What happens next?</h4>
                   <ul className="text-sm text-green-700 space-y-1">
-                    <li>• We'll verify your company ID is available</li>
+                    <li>• We'll verify your employer ID is available</li>
                     <li>• You'll be redirected to Google to sign in</li>
                     <li>• Your employer account will be created automatically</li>
                   </ul>

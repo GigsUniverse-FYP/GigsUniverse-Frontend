@@ -27,7 +27,7 @@ export default function EmployerLogin() {
   useEffect(() => {
     const checkJWT = async () => {
       try {
-        const res = await fetch("http://localhost:8080/api/auth/verify-token", {
+        const res = await fetch(`${backendURL}/api/auth/verify-token`, {
           credentials: "include",
         })
 

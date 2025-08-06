@@ -99,7 +99,7 @@ export default function EmployerSignup() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          employerUserId: formData.id,
+          employerUserId: `${formData.id}@gigsuniverse.employer`,
           email: formData.email,
           password: formData.password,
         }),

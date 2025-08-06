@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation"
 import HoverSidebar from "@/app/components/employer_components/employer_navigator"
+import { useEffect } from "react"
 
 export default function EmployerLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -10,6 +11,23 @@ export default function EmployerLayoutWrapper({ children }: { children: React.Re
     pathname.startsWith("/dashboard/employer/onboarding") ||
     pathname === "/dashboard/employer/banned"
 
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/^https?:\/\//, '')
+
+  useEffect(() => {
+    const socket = new WebSocket("wss://" + backendUrl + "/ws/online-status")
+      socket.onopen = () => {
+        socket.send("ping")
+      }
+  
+      socket.onclose = () => {
+        console.log("WebSocket disconnected (employer)")
+      }
+  
+      return () => {
+        socket.close()
+      }
+    }, [])
+    
   return (
     <div className="flex min-h-screen bg-gray-50">
       {!hideSidebar && <HoverSidebar />}

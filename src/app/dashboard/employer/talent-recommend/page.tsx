@@ -124,7 +124,7 @@ export default function RecommendedTalentsPage() {
   })
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 mb-5">
+    <div className="w-full sm:max-w-8xl mx-auto space-y-6 mb-5 -ml-10 sm:ml-0">
       {/* Recommended Talents Header */}
       <div className="text-center sm:text-left">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-4 mb-4">Recommended Talents</h1>

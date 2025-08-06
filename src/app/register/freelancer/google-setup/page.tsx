@@ -33,8 +33,10 @@ export default function FreelancerGoogleSetup() {
 
     const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
+    const fullId = `${id}@gigsuniverse.freelancer`;
+
     try {
-      const checkRes = await fetch(`${backendURL}/api/auth/freelancer/check-id?id=${id}`, {
+      const checkRes = await fetch(`${backendURL}/api/auth/freelancer/check-id?id=${fullId}`, {
         credentials: "include",
       })
 
@@ -50,7 +52,7 @@ export default function FreelancerGoogleSetup() {
       }
 
       // Redirect to OAuth2 init
-      window.location.href = `${backendURL}/api/auth/freelancer/oauth2-init?id=${encodeURIComponent(id)}`
+      window.location.href = `${backendURL}/api/auth/freelancer/oauth2-init?id=${encodeURIComponent(fullId)}`
     } catch (err) {
       console.error(err)
       setError("Failed to verify ID. Please try again.")

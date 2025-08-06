@@ -151,7 +151,7 @@ export default function SupportTicketPage() {
   }
 
   return (
-    <div className="max-w-8xl mx-auto sm:px-6 lg:px-8 space-y-6 sm:mr-0 mr-20 mb-5">
+    <div className="w-full sm:max-w-8xl mx-auto space-y-6 mb-5 -ml-10 sm:ml-0">
       {/* Support Header */}
       <div className="text-center sm:text-left">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-4 mb-4">Support Center</h1>

@@ -8,12 +8,13 @@ import { useEffect } from "react"
 
 export default function HomePage() {
   const router = useRouter();
+  const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   // check whether JWT exists
   useEffect(() => {
     const checkJWT = async () => {
       try {
-        const res = await fetch("http://localhost:8080/api/auth/verify-token", {
+        const res = await fetch(`${backendURL}/api/auth/verify-token`, {
           credentials: "include",
         })
 

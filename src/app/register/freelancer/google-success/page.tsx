@@ -64,7 +64,7 @@ export default function GoogleSignupSuccess() {
               <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
                 <p className="text-sm text-gray-700 mb-2">Account Details:</p>
                 <div className="space-y-1">
-                  <p className="font-medium text-gray-900">{userId + "@gigsuniverse.freelancer"}</p>
+                  <p className="font-medium text-gray-900">{userId}</p>
                   <p className="text-sm text-gray-600">{userEmail}</p>
                 </div>
               </div>
