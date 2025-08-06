@@ -537,13 +537,13 @@ export default function Step2ProfileCreation() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex items-center space-x-2 pt-8">
+                <div className="flex items-center space-x-2 pt-3">
                   <Switch
                     id="openToHire"
                     checked={formData.openToHire}
                     onCheckedChange={(checked) => handleInputChange("openToHire", checked)}
                   />
-                  <Label htmlFor="openToWork">Open to Work</Label>
+                  <Label htmlFor="openToHire">I'm Currently Open to Hire</Label>
                 </div>
               </div>
 

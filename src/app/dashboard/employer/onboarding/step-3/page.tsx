@@ -19,6 +19,7 @@ export default function Step4TermsConditions() {
   
   useOnboardingRedirect()
 
+
   const completeOnboarding = async () => {
     setIsSubmitting(true)
     try {
@@ -51,7 +52,7 @@ export default function Step4TermsConditions() {
           <p className="text-gray-600">Complete your profile setup to start finding amazing talents</p>
         </div>
 
-        <StepIndicator currentStep={4} completedSteps={completedSteps} />
+        <StepIndicator currentStep={3} completedSteps={completedSteps} />
 
         <Card className="mb-8">
           <CardContent className="p-8">
@@ -63,6 +64,7 @@ export default function Step4TermsConditions() {
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Terms and Conditions</h2>
                 <p className="text-gray-600">Please review and accept our terms to complete your registration</p>
               </div>
+
 
               <div className="space-y-4">
                 <div className="bg-gray-50 rounded-xl p-6 max-h-64 overflow-y-auto">
