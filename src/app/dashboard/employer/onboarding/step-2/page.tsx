@@ -62,6 +62,7 @@ export default function Step2ProfileCreation() {
     phone: "",
     location: "",
     profilePicture: null as File | null,
+    profilePictureMimeType: "",
     selfDescription: "",
     languageProficiency: [] as { language: string; proficiency: string }[],
     openToHire: false,
@@ -123,7 +124,16 @@ export default function Step2ProfileCreation() {
         ...prev,
         [field]: [...currentFiles, ...filesToAdd]
       }));
-    } else {
+    } 
+    else if (field === "profilePicture") {
+      const singleFile = validFiles[0] || null;
+      setFormData(prev => ({
+        ...prev,
+        profilePicture: singleFile,
+        profilePictureMimeType: singleFile?.type
+      }));
+    }     
+    else {
       const singleFile = validFiles[0] || null;
       setFormData(prev => ({
         ...prev,
@@ -719,7 +729,7 @@ export default function Step2ProfileCreation() {
                 <Input
                   type="file"
                   multiple
-                  accept="image/*,application/pdf"
+                  accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   onChange={(e) => handleFileChange("certificationFiles", e, true)}
                   className="file:text-blue-600 file:font-medium"
                   disabled={formData.certificationFiles.length >= 3}

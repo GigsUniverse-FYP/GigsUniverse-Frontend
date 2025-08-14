@@ -198,7 +198,7 @@ export default function AdminLogin() {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full bg-gray-800 hover:bg-gray-700 text-white" disabled={isLoading}>
+                <Button type="submit" className="w-full mt-5 bg-gray-800 hover:bg-gray-700 text-white" disabled={isLoading}>
                   {isLoading ? "Signing In..." : "Sign In"}
                 </Button>
               </form>

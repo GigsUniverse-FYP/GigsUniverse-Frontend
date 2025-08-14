@@ -1,5 +1,6 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
+import AdminLayoutWrapper from "./admin-layout-wrapper";
 
 export default async function FreelancerLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies()
@@ -15,6 +16,7 @@ export default async function FreelancerLayout({ children }: { children: React.R
     headers: {
       Cookie: `jwt=${jwt}`,
     },
+    credentials: "include",
     cache: "no-store",
   })
 
@@ -34,5 +36,5 @@ export default async function FreelancerLayout({ children }: { children: React.R
     }
   }
 
-  return <>{children}</>
+  return <AdminLayoutWrapper>{children}</AdminLayoutWrapper>
 }

@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation"
 import HoverSidebar from "@/app/components/freelancer_components/freelancer_navigator"
 import { useEffect } from "react"
+import { ToastContainer } from "react-toastify"
 
 export default function ClientLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -49,6 +50,7 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
       {!hideSidebar && <HoverSidebar />}
       <div className={`flex-1 flex flex-col ${!hideSidebar ? "ml-20" : ""}`}>
         <div className="max-w-7xl mx-auto">{children}</div>
+        <ToastContainer position="top-right" autoClose={3000} />
       </div>
     </div>
   )

@@ -45,6 +45,18 @@ export const locationData = [
   "Vietnam"
 ];
 
+
+export const educationLevels = [
+  "High School",
+  "Certificate",
+  "Diploma",
+  "Associate Degree",
+  "Bachelor's Degree",
+  "Master's Degree",
+  "Doctorate (PhD)",
+  "Professional Certification"
+];
+
 export const languages = [
   "Arabic",
   "Bengali",
@@ -79,17 +91,6 @@ export const languages = [
   "Turkish",
   "Urdu",
   "Vietnamese"
-];
-
-export const educationLevels = [
-  "High School",
-  "Certificate",
-  "Diploma",
-  "Associate Degree",
-  "Bachelor's Degree",
-  "Master's Degree",
-  "Doctorate (PhD)",
-  "Professional Certification"
 ];
 
 

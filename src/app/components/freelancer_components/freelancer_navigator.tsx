@@ -1,9 +1,8 @@
 "use client";
 
 import type React from "react";
-
-import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation"; 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -80,23 +79,6 @@ const menuItems = [
     href: "/dashboard/freelancer/support-ticket",
   },
 ];
-const settingsMenuItems = [
-  {
-    icon: User,
-    label: "My Profile",
-    href: "/dashboard/freelancer/profile",
-  },
-  {
-    icon: CreditCard,
-    label: "Subscription",
-    href: "/dashboard/freelancer/subscription",
-  },
-  {
-    icon: ExternalLink,
-    label: "Stripe Express",
-    href: "/dashboard/freelancer/stripe-express",
-  },
-];
 
 interface HoverSidebarProps {
   isMobileOpen?: boolean;
@@ -130,16 +112,53 @@ function LogoutDialog({
   );
 }
 
+interface FreelancerNavInfo {
+  userId: string;
+  email: string;
+  username: string;
+  isPremium: boolean;
+  profilePicture?: string;
+  profilePictureMimeType?: string;
+}
+
 export default function HoverSidebar({
   isMobileOpen = false,
   onMobileClose,
 }: HoverSidebarProps) {
+  const router = useRouter(); // Added router
   const pathname = usePathname();
   const [isHovered, setIsHovered] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(isMobileOpen);
   const [showMoreSettings, setShowMoreSettings] = useState(false);
+  const [formData, setFormData] = useState<FreelancerNavInfo | null>(null);
 
-  const userPlan = "premium";
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch(`${backendUrl}/api/auth/freelancer/nav-info`, {
+          credentials: "include",
+        })
+        if (!res.ok) {
+          return
+        }
+        const data = await res.json()
+        setFormData(data)
+      } catch (err) {
+        console.error("Error fetching profile:", err)
+      }
+    }
+    fetchProfile()
+  }, [backendUrl])
+
+  let userPlan = "default";
+
+  if(formData?.isPremium) {
+    userPlan = "premium";
+  }else{
+    userPlan = "default";
+  }
 
   const handleMobileToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -167,6 +186,45 @@ export default function HoverSidebar({
       console.error("Logout failed", error);
     }
   };
+
+  const handleStripeExpressClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    try {
+      const res = await fetch(`${backendUrl}/api/stripe/express-login`, {
+        credentials: "include",
+      });
+
+      if (!res.ok) throw new Error("Failed to get Stripe login URL");
+
+      const data = await res.json();
+      if (data.url) {
+        window.open(data.url, "_blank");
+      } else {
+        console.error("No login URL returned");
+      }
+    } catch (err) {
+      console.error("Error fetching Stripe login link:", err);
+    }
+  };
+
+  const settingsMenuItems = [
+    {
+      icon: User,
+      label: "My Profile",
+      href: "/dashboard/freelancer/profile",
+    },
+    {
+      icon: CreditCard,
+      label: "Subscription",
+      href: "/dashboard/freelancer/subscription",
+    },
+    {
+      icon: ExternalLink,
+      label: "Stripe Express",
+      onClick: handleStripeExpressClick,
+    },
+  ];
 
   return (
     <TooltipProvider>
@@ -309,11 +367,21 @@ export default function HoverSidebar({
                 <TooltipTrigger asChild>
                   <div className="relative">
                     <div className="w-10 h-10 rounded-full bg-gray-200 border-2 border-white shadow-sm overflow-hidden">
-                      <img
-                        src="/placeholder.svg?height=40&width=40"
-                        alt="Profile"
-                        className="w-full h-full object-cover"
-                      />
+                      {formData?.profilePicture && formData?.profilePictureMimeType ? (
+                        <img
+                          src={`data:${formData.profilePictureMimeType};base64,${formData.profilePicture}`}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                          style={{ borderRadius: "50%" }}
+                        />
+                      ) : (
+                        <img
+                          src="/public/images/placeholder.jpg"
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                          style={{ borderRadius: "50%" }}
+                        />
+                      )}
                     </div>
                     <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border border-white"></div>
                   </div>
@@ -322,7 +390,7 @@ export default function HoverSidebar({
                   side="right"
                   className="bg-black text-white rounded-xl"
                 >
-                  <p>John Doe</p>
+                  <p>{formData?.username}</p>
                 </TooltipContent>
               </Tooltip>
               <div className="mt-2 flex flex-col gap-2">
@@ -375,20 +443,30 @@ export default function HoverSidebar({
             <div className="flex items-center gap-3 p-2">
               <div className="relative">
                 <div className="w-10 h-10 rounded-full bg-gray-200 border-2 border-white shadow-sm overflow-hidden">
-                  <img
-                    src="/placeholder.svg?height=40&width=40"
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
+                    {formData?.profilePicture && formData?.profilePictureMimeType ? (
+                      <img
+                        src={`data:${formData.profilePictureMimeType};base64,${formData.profilePicture}`}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                        style={{ borderRadius: "50%" }}
+                      />
+                    ) : (
+                      <img
+                        src="/public/images/placeholder.jpg"
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                        style={{ borderRadius: "50%" }}
+                      />
+                    )}
                 </div>
                 <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border border-white"></div>
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className="font-semibold text-gray-900 truncate">
-                  John Doe
+                  {formData?.username}
                 </h4>
                 <p className="text-xs text-gray-500 truncate">
-                  john.doe@example.com
+                 {formData?.email}
                 </p>
               </div>
             </div>
@@ -418,6 +496,25 @@ export default function HoverSidebar({
                   }`}
                 >
                   {settingsMenuItems.map((item) => {
+                    // Handle Stripe Express differently
+                    if (item.label === "Stripe Express") {
+                      return (
+                        <Button
+                          key={item.label}
+                          variant="ghost"
+                          className="w-full justify-start rounded-xl h-8 text-sm text-gray-600 hover:text-black hover:bg-gray-100"
+                          onClick={(e) => {
+                            handleMobileClose?.();
+                            item.onClick?.(e);
+                          }}
+                        >
+                          <item.icon className="w-3.5 h-3.5 mr-2" />
+                          <span>{item.label}</span>
+                        </Button>
+                      );
+                    }
+                    
+                    // Handle other menu items normally
                     const isActive = pathname === item.href;
                     return (
                       <Button
@@ -466,7 +563,7 @@ export default function HoverSidebar({
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-12 h-12 bg-white flex items-center justify-center flex-shrink-0 -ml-2">
               <img
-                src="/placeholder.svg?height=48&width=48"
+                src="/icons/nav-icon.png"
                 className="w-12 h-9 text-white"
                 alt="Navigation Icon"
               />
@@ -558,18 +655,28 @@ export default function HoverSidebar({
           <div className="flex items-center gap-3 p-2">
             <div className="relative">
               <div className="w-10 h-10 rounded-full bg-gray-200 border-2 border-white shadow-sm overflow-hidden">
-                <img
-                  src="/placeholder.svg?height=40&width=40"
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
+                {formData?.profilePicture && formData?.profilePictureMimeType ? (
+                  <img
+                    src={`data:${formData.profilePictureMimeType};base64,${formData.profilePicture}`}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                    style={{ borderRadius: "50%" }}
+                  />
+                ) : (
+                  <img
+                    src="/public/images/placeholder.jpg"
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                    style={{ borderRadius: "50%" }}
+                  />
+                )}
               </div>
               <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border border-white"></div>
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="font-semibold text-gray-900 truncate">John Doe</h4>
+              <h4 className="font-semibold text-gray-900 truncate">{formData?.username}</h4>
               <p className="text-xs text-gray-500 truncate">
-                john.doe@example.com
+                {formData?.email}
               </p>
             </div>
           </div>
@@ -599,6 +706,24 @@ export default function HoverSidebar({
                 }`}
               >
                 {settingsMenuItems.map((item) => {
+                  if (item.label === "Stripe Express") {
+                    return (
+                      <Button
+                        key={item.label}
+                        variant="ghost"
+                        className="w-full justify-start rounded-xl h-8 text-sm text-gray-600 hover:text-black hover:bg-gray-100"
+                        onClick={(e) => {
+                          handleMobileClose?.();
+                          item.onClick?.(e);
+                        }}
+                      >
+                        <item.icon className="w-3.5 h-3.5 mr-2" />
+                        <span>{item.label}</span>
+                      </Button>
+                    );
+                  }
+                  
+                  // Handle other menu items normally
                   const isActive = pathname === item.href;
                   return (
                     <Button

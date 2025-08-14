@@ -39,7 +39,7 @@ export default function EmployerGoogleSetup() {
 
     const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-    const fullId = `${id}@gigsuniverse.freelancer`;
+    const fullId = `${id}@gigsuniverse.employer`;
     try {
       const checkRes = await fetch(`${backendURL}/api/auth/employer/check-id?id=${fullId}`, {
         credentials: "include",

@@ -9,7 +9,7 @@ export default function AutoClosePage() {
 
   return (
     <div className="flex items-center justify-center h-screen">
-      <p className="text-xl text-gray-600">You can now close this tab.</p>
+      <p className="text-xl text-gray-600">You may now safely close this tab.</p>
     </div>
   );
 }

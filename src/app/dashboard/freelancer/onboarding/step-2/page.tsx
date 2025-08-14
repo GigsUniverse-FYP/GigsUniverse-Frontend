@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { Briefcase, Plus, Minus, XCircle, ArrowRight, ArrowLeft } from "lucide-react"
+import { Briefcase, Plus, Minus, XCircle, ArrowRight } from "lucide-react"
 import StepIndicator from "../step-indicator"
 import {
   locationData,
@@ -66,11 +66,12 @@ export default function Step2ProfileCreation() {
     phone: "",
     location: "",
     profilePicture: null as File | null,
+    profilePictureMimeType: "",
     selfDescription: "",
     highestEducationLevel: "",
     hoursPerWeek: 0,
     jobCategory: [] as string[],
-    preferredJobTitles: [] as string[],
+    preferredJobTitle: [] as string[],
     skillTags: [] as string[],
     languageProficiency: [] as { language: string; proficiency: string }[],
     preferredPayRate: "",
@@ -136,7 +137,16 @@ export default function Step2ProfileCreation() {
         ...prev,
         [field]: [...currentFiles, ...filesToAdd]
       }));
-    } else {
+    }
+    else if (field === "profilePicture") {
+      const singleFile = validFiles[0] || null;
+      setFormData(prev => ({
+        ...prev,
+        profilePicture: singleFile,
+        profilePictureMimeType: singleFile?.type
+      }));
+    } 
+    else {
       const singleFile = validFiles[0] || null;
       setFormData(prev => ({
         ...prev,
@@ -162,15 +172,15 @@ export default function Step2ProfileCreation() {
   }
 
   const addJobTitle = (title: string) => {
-    if (formData.preferredJobTitles.length < 5 && !formData.preferredJobTitles.includes(title)) {
-      handleInputChange("preferredJobTitles", [...formData.preferredJobTitles, title])
+    if (formData.preferredJobTitle.length < 5 && !formData.preferredJobTitle.includes(title)) {
+      handleInputChange("preferredJobTitle", [...formData.preferredJobTitle, title])
     }
   }
 
   const removeJobTitle = (title: string) => {
     handleInputChange(
-      "preferredJobTitles",
-      formData.preferredJobTitles.filter((t) => t !== title),
+      "preferredJobTitle",
+      formData.preferredJobTitle.filter((t) => t !== title),
     )
   }
 
@@ -286,7 +296,7 @@ export default function Step2ProfileCreation() {
       formData.hoursPerWeek >= 1 &&
       formData.hoursPerWeek <= 40 &&
       formData.jobCategory.length > 0 &&
-      formData.preferredJobTitles.length > 0 &&
+      formData.preferredJobTitle.length > 0 &&
       formData.skillTags.length > 0 &&
       formData.languageProficiency.length > 0 &&
       formData.languageProficiency.every((lp) => lp.language && lp.proficiency) &&
@@ -632,13 +642,13 @@ export default function Step2ProfileCreation() {
               {/* Preferred Job Titles */}
               <div className="w-full">
                 <Label className="mb-2 block">Preferred Job Titles * (Max 5)</Label>
-                <Select onValueChange={addJobTitle} disabled={formData.preferredJobTitles.length >= 5}>
+                <Select onValueChange={addJobTitle} disabled={formData.preferredJobTitle.length >= 5}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select job titles" />
                   </SelectTrigger>
                   <SelectContent>
                     {jobTitles
-                      .filter((title) => !formData.preferredJobTitles.includes(title))
+                      .filter((title) => !formData.preferredJobTitle.includes(title))
                       .map((title) => (
                         <SelectItem key={title} value={title}>
                           {title}
@@ -646,10 +656,10 @@ export default function Step2ProfileCreation() {
                       ))}
                   </SelectContent>
                 </Select>
-                {formData.preferredJobTitles.length > 0 && (
+                {formData.preferredJobTitle.length > 0 && (
                   <div className="mt-3 w-full min-w-0">
                     <div className="flex flex-wrap gap-2">
-                      {formData.preferredJobTitles.map((title) => (
+                      {formData.preferredJobTitle.map((title) => (
                         <Badge
                           key={title}
                           variant="secondary"
@@ -800,7 +810,7 @@ export default function Step2ProfileCreation() {
                 <Input
                   id="resumeFile"
                   type="file"
-                  accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   onChange={(e) => handleFileChange("resumeFile", e)}
                   className="file:text-blue-600 file:font-medium"
                 />
@@ -919,7 +929,7 @@ export default function Step2ProfileCreation() {
                 <Input
                   type="file"
                   multiple
-                  accept="image/*,application/pdf"
+                  accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   onChange={(e) => handleFileChange("portfolioFiles", e, true)}
                   className="file:text-blue-600 file:font-medium"
                   disabled={formData.portfolioFiles.length >= 2}
@@ -1051,7 +1061,7 @@ export default function Step2ProfileCreation() {
                 <Input
                   type="file"
                   multiple
-                  accept="image/*,application/pdf"
+                  accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   onChange={(e) => handleFileChange("certificationFiles", e, true)}
                   className="file:text-blue-600 file:font-medium"
                   disabled={formData.certificationFiles.length >= 3}

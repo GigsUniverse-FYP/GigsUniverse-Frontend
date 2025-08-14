@@ -9,20 +9,20 @@ import {
   LayoutDashboard,
   MessageCircle,
   Search,
-  Star,
-  Briefcase,
   Menu,
   ArrowLeft,
   LogOut,
   Settings,
   CreditCard,
-  LifeBuoy,
   ChevronRight,
   User,
   Crown,
   Shield,
-  Banknote,
   Building2,
+  Users,
+  FileText,
+  Headphones,
+  Receipt,
 } from "lucide-react"
 import {
   AlertDialog,
@@ -40,37 +40,37 @@ const menuItems = [
   {
     icon: LayoutDashboard,
     label: "Dashboard",
-    href: "/dashboard/employer",
+    href: "/dashboard/admin",
   },
   {
     icon: MessageCircle,
     label: "Messages",
-    href: "/dashboard/employer/chat",
+    href: "/dashboard/admin/chat",
   },
   {
     icon: Search,
     label: "Job Posts",
-    href: "/dashboard/employer/job-post",
+    href: "/dashboard/admin/job-post",
   },
   {
-    icon: Star,
-    label: "Recommended",
-    href: "/dashboard/employer/talent-recommend",
+    icon: Users,
+    label: "Users",
+    href: "/dashboard/admin/user-records",
   },
   {
-    icon: Briefcase,
-    label: "Freelancers",
-    href: "/dashboard/employer/hired-freelancer",
+    icon: FileText,
+    label: "Report",
+    href: "/dashboard/admin/reports",
   },
   {
-    icon: Banknote,
-    label: "Top Up",
-    href: "/dashboard/employer/top-up",
+    icon: Headphones,
+    label: "Support Ticket",
+    href: "/dashboard/admin/support-ticket",
   },
   {
-  icon: LifeBuoy,
-  label: "Support Ticket",
-  href: "/dashboard/employer/support-ticket",
+    icon: Receipt,
+    label: "Payment Records",
+    href: "/dashboard/admin/payment-records",
   },
 ] 
 
@@ -78,18 +78,13 @@ const settingsMenuItems = [
   {
     icon: User,
     label: "My Profile",
-    href: "/dashboard/employer/profile",
-  },
-  {
-    icon: CreditCard,
-    label: "Subscription",
-    href: "/dashboard/employer/subscription",
+    href: "/dashboard/admin/profile",
   },
   {
     icon: Building2,
-    label: "Company (Beta)",
-    href: "/dashboard/employer/company",
-  },
+    label: "Company Verification",
+    href: "/dashboard/admin/company",
+  }
 ]
 
 interface HoverSidebarProps {
@@ -124,11 +119,10 @@ function LogoutDialog({
   );
 }
 
-interface EmployerNavInfo {
+interface AdminNavInfo {
   userId: string;
   email: string;
   username: string;
-  isPremium: boolean;
   profilePicture?: string;
   profilePictureMimeType?: string;
 }
@@ -138,14 +132,13 @@ export default function HoverSidebar({ isMobileOpen = false, onMobileClose }: Ho
   const [isHovered, setIsHovered] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(isMobileOpen)
   const [showMoreSettings, setShowMoreSettings] = useState(false)
-  const [formData, setFormData] = useState<EmployerNavInfo | null>(null)
-
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+  const [formData, setFormData] = useState<AdminNavInfo | null>(null)
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch(`${backendUrl}/api/auth/employer/nav-info`, {
+        const res = await fetch(`${backendUrl}/api/auth/admin/nav-info`, {
           credentials: "include",
         })
         if (!res.ok) {
@@ -160,13 +153,6 @@ export default function HoverSidebar({ isMobileOpen = false, onMobileClose }: Ho
     fetchProfile()
   }, [backendUrl])
 
-  let userPlan = "default";
-
-  if (formData?.isPremium) {
-    userPlan = "premium";
-  } else {
-    userPlan = "default";
-  }
 
   const handleMobileToggle = () => {
     setMobileOpen(!mobileOpen)
@@ -189,7 +175,7 @@ export default function HoverSidebar({ isMobileOpen = false, onMobileClose }: Ho
         method: "POST",
         credentials: "include",
       });
-      window.location.href = "/login/employer";
+      window.location.href = "/login/admin";
     } catch (error) {
       console.error("Logout failed", error);
     }
@@ -236,21 +222,12 @@ export default function HoverSidebar({ isMobileOpen = false, onMobileClose }: Ho
               <h2 className="font-black text-gray-900 text-lg whitespace-nowrap">GigsUniverse</h2>
               <div className="flex items-center gap-2">
                 <Badge className="bg-gray-100 text-gray-700 border-gray-300 text-xs font-medium rounded-lg">
-                  Employer
+                  Admin
                 </Badge>
                 <div className="flex items-center gap-1">
                   <Badge className="bg-black text-white text-xs font-medium rounded-lg border-0 flex items-center gap-1">
-                    {userPlan === "premium" ? (
-                      <>
                         <Crown className="w-3 h-3" />
-                        Premium
-                      </>
-                    ) : (
-                      <>
-                        <Shield className="w-3 h-3" />
-                        Default
-                      </>
-                    )}
+                        Admin
                   </Badge>
                 </div>
               </div>
@@ -387,7 +364,7 @@ export default function HoverSidebar({ isMobileOpen = false, onMobileClose }: Ho
             <div className="flex items-center gap-3 p-2">
               <div className="relative">
                 <div className="w-10 h-10 rounded-full bg-gray-200 border-2 border-white shadow-sm overflow-hidden">
-                    {formData?.profilePicture && formData?.profilePictureMimeType ? (
+                      {formData?.profilePicture && formData?.profilePictureMimeType ? (
                         <img
                           src={`data:${formData.profilePictureMimeType};base64,${formData.profilePicture}`}
                           alt="Profile"
@@ -485,17 +462,8 @@ export default function HoverSidebar({ isMobileOpen = false, onMobileClose }: Ho
                 </Badge>
                 <div className="flex items-center gap-1">
                   <Badge className="bg-black text-white text-xs font-medium rounded-lg border-0 flex items-center gap-1">
-                    {userPlan === "premium" ? (
-                      <>
                         <Crown className="w-3 h-3" />
-                        Premium
-                      </>
-                    ) : (
-                      <>
-                        <Shield className="w-3 h-3" />
-                        Default
-                      </>
-                    )}
+                        Admin
                   </Badge>
                 </div>
               </div>
