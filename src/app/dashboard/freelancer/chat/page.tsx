@@ -41,10 +41,11 @@ import {
   Play,
   Music,
   User,
+  Check,
+  Edit2,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Label } from "@/components/ui/label";
 
 interface AvailableUser {
   id: string;
@@ -216,6 +217,58 @@ export default function ChatInterface() {
   const [usersToAdd, setUsersToAdd] = useState<string[]>([]);
   const [addUserSearch, setAddUserSearch] = useState('');
 
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [editedName, setEditedName] = useState("")
+
+  const handleEditName = () => {
+    setIsEditingName(true)
+    setEditedName(currentChat?.displayName || currentChat?.groupName || "")
+  }
+
+  const saveGroupName = async (chatId: string, newName: string) => {
+    const res = await fetch(`${backendUrl}/api/chat/${chatId}/rename`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newName }),
+    });
+
+    if (!res.ok) throw new Error("Failed to rename group");
+
+    const updatedChat = await res.json();
+    return updatedChat;
+  };
+
+  const handleSaveName = async () => {
+    if (!currentChat || !editedName.trim()) return;
+
+    try {
+      const updatedChat = await saveGroupName(currentChat.id, editedName.trim());
+
+      // Merge only the new groupName/displayName
+      const mergedChat = {
+        ...currentChat,
+        groupName: updatedChat.groupName, // backend only returns updated name
+        displayName: updatedChat.displayName, // optional if you use displayName
+        updatedAt: updatedChat.updatedAt
+      };
+
+      // Update state
+      setAllChats(prev => prev.map(c => c.id === mergedChat.id ? mergedChat : c));
+      setCurrentChat(mergedChat);
+
+      setIsEditingName(false);
+      toast.success("Group name updated successfully");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update group name");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingName(false);
+  };
+
 const handleAddUsersToGroup = async () => {
   if (!selectedChat || usersToAdd.length === 0) return;
 
@@ -232,13 +285,22 @@ const handleAddUsersToGroup = async () => {
       throw new Error(errorData.error || "Failed to add users to group");
     }
 
-    // The backend returns the full updated chat
-    const fullChat: ChatSessionDTO = await res.json();
+    // Backend returns the full updated chat, if not, fetch full chat next
+    let updatedChat: ChatSessionDTO;
+    try {
+      updatedChat = await res.json();
+    } catch {
+      // fallback: fetch full chat if backend only returns success
+      const chatRes = await fetch(`${backendUrl}/api/chat/${selectedChat}`, {
+        credentials: "include",
+      });
+      updatedChat = await chatRes.json();
+    }
 
-    // Update the chat in allChats
-    setAllChats(prev => prev.map(c => c.id === selectedChat ? fullChat : c));
+    // Update frontend state with **full participants + roles**
+    setAllChats(prev => prev.map(c => c.id === selectedChat ? updatedChat : c));
+    setCurrentChat(updatedChat);
 
-    // Close dialog & reset form
     setShowAddUserDialog(false);
     setUsersToAdd([]);
     setAddUserSearch("");
@@ -249,6 +311,8 @@ const handleAddUsersToGroup = async () => {
     toast.error("Failed to add users to group");
   }
 };
+
+
 
 
   const confirmMakeAdmin = async () => {
@@ -1709,10 +1773,66 @@ const handleAddUsersToGroup = async () => {
                     <span className="font-semibold">{currentChat.displayAvatarInitials || "?"}</span>
                   )}
                 </div>
-                <div>
-                  <h3 className="font-semibold text-lg">
-                    {currentChat.displayName || currentChat.groupName || "Unnamed Chat"}
-                  </h3>
+
+
+                <div className="flex-1">
+                  {currentChat.groupChat && currentChat.roles?.[currentUserId!] === "admin" ? (
+                    <div className="flex items-center gap-2">
+                      {isEditingName ? (
+                        <div className="flex items-center gap-2 flex-1">
+                          <input
+                            type="text"
+                            value={editedName}
+                            onChange={(e) => setEditedName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleSaveName()
+                              if (e.key === "Escape") handleCancelEdit()
+                            }}
+                            className="flex-1 px-2 py-1 text-lg font-semibold border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter group name"
+                            autoFocus
+                          />
+                          <Button
+                            size="sm"
+                            onClick={handleSaveName}
+                            className="bg-green-600 hover:bg-green-700 text-white px-2 py-1"
+                          >
+                            <Check className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleCancelEdit}
+                            className="px-2 py-1 bg-transparent"
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        // DISPLAY MODE: Shows group name with edit button for admins
+                        <div className="flex items-center gap-2 flex-1">
+                          <h3 className="font-semibold text-lg flex-1">
+                            {currentChat.displayName || currentChat.groupName || "Unnamed Chat"}
+                          </h3>
+                          {/* EDIT BUTTON: Click this to modify group name */}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleEditName}
+                            className="hover:bg-blue-50 text-blue-600 p-1"
+                            title="Edit group name"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+
+                    <h3 className="font-semibold text-lg">
+                      {currentChat.displayName || currentChat.groupName || "Unnamed Chat"}
+                    </h3>
+                  )}
                   <p className="text-sm text-gray-600">
                     {currentChat.groupChat
                       ? `${currentChat.participants?.length || 0} members`
@@ -1739,16 +1859,14 @@ const handleAddUsersToGroup = async () => {
                   </div>
 
                   <div className="max-h-40 overflow-y-auto space-y-2">
-                    {currentChat.participants?.map((participant) => {
-                      const isAdmin =
-                        currentUserId &&
-                        currentChat.roles?.[currentUserId] === "admin";
+                    {currentChat.participants?.map((participant, index) => {
+                      const isAdmin = currentUserId && currentChat?.roles?.[currentUserId] === "admin";
 
                       const isCurrentUser = participant.userId === currentUserId;
 
                       return (
                         <div
-                          key={participant.userId}
+                           key={`${participant.userId}-${index}`}
                           className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 border border-gray-100"
                         >
                           {/* Participant Info */}
