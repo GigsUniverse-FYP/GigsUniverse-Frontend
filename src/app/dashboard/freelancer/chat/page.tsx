@@ -45,7 +45,17 @@ import {
   Edit2,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useRouter } from "next/navigation";
 
 interface AvailableUser {
   id: string;
@@ -196,9 +206,10 @@ export default function ChatInterface() {
   const [stompClient, setStompClient] = useState<Client | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
-  const [showLeaveChatConfirmation, setShowLeaveChatConfirmation] = useState(false);
+  const [showLeaveChatConfirmation, setShowLeaveChatConfirmation] =
+    useState(false);
 
-  const [showRemoveConfirmation, setShowRemoveConfirmation] = useState(false)
+  const [showRemoveConfirmation, setShowRemoveConfirmation] = useState(false);
   const [userToRemove, setUserToRemove] = useState<{
     userId: string;
     fullName?: string;
@@ -211,19 +222,24 @@ export default function ChatInterface() {
     username?: string;
   } | null>(null);
 
-  const [showMakeAdminConfirmation, setShowMakeAdminConfirmation] = useState(false);
+  const [showMakeAdminConfirmation, setShowMakeAdminConfirmation] =
+    useState(false);
 
-  const [showAddUserDialog, setShowAddUserDialog] = useState(false)
+  const [showAddUserDialog, setShowAddUserDialog] = useState(false);
   const [usersToAdd, setUsersToAdd] = useState<string[]>([]);
-  const [addUserSearch, setAddUserSearch] = useState('');
+  const [addUserSearch, setAddUserSearch] = useState("");
 
-  const [isEditingName, setIsEditingName] = useState(false)
-  const [editedName, setEditedName] = useState("")
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState("");
+
+  const handleReport = () => {
+    window.open("/dashboard/freelancer/support-ticket", "_blank");
+  };
 
   const handleEditName = () => {
-    setIsEditingName(true)
-    setEditedName(currentChat?.displayName || currentChat?.groupName || "")
-  }
+    setIsEditingName(true);
+    setEditedName(currentChat?.displayName || currentChat?.groupName || "");
+  };
 
   const saveGroupName = async (chatId: string, newName: string) => {
     const res = await fetch(`${backendUrl}/api/chat/${chatId}/rename`, {
@@ -243,18 +259,23 @@ export default function ChatInterface() {
     if (!currentChat || !editedName.trim()) return;
 
     try {
-      const updatedChat = await saveGroupName(currentChat.id, editedName.trim());
+      const updatedChat = await saveGroupName(
+        currentChat.id,
+        editedName.trim()
+      );
 
       // Merge only the new groupName/displayName
       const mergedChat = {
         ...currentChat,
         groupName: updatedChat.groupName, // backend only returns updated name
         displayName: updatedChat.displayName, // optional if you use displayName
-        updatedAt: updatedChat.updatedAt
+        updatedAt: updatedChat.updatedAt,
       };
 
       // Update state
-      setAllChats(prev => prev.map(c => c.id === mergedChat.id ? mergedChat : c));
+      setAllChats((prev) =>
+        prev.map((c) => (c.id === mergedChat.id ? mergedChat : c))
+      );
       setCurrentChat(mergedChat);
 
       setIsEditingName(false);
@@ -269,51 +290,53 @@ export default function ChatInterface() {
     setIsEditingName(false);
   };
 
-const handleAddUsersToGroup = async () => {
-  if (!selectedChat || usersToAdd.length === 0) return;
+  const handleAddUsersToGroup = async () => {
+    if (!selectedChat || usersToAdd.length === 0) return;
 
-  try {
-    const res = await fetch(`${backendUrl}/api/chat/${selectedChat}/participants`, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userIds: usersToAdd }),
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.error || "Failed to add users to group");
-    }
-
-    // Backend returns the full updated chat, if not, fetch full chat next
-    let updatedChat: ChatSessionDTO;
     try {
-      updatedChat = await res.json();
-    } catch {
-      // fallback: fetch full chat if backend only returns success
-      const chatRes = await fetch(`${backendUrl}/api/chat/${selectedChat}`, {
-        credentials: "include",
-      });
-      updatedChat = await chatRes.json();
+      const res = await fetch(
+        `${backendUrl}/api/chat/${selectedChat}/participants`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userIds: usersToAdd }),
+        }
+      );
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to add users to group");
+      }
+
+      // Backend returns the full updated chat, if not, fetch full chat next
+      let updatedChat: ChatSessionDTO;
+      try {
+        updatedChat = await res.json();
+      } catch {
+        // fallback: fetch full chat if backend only returns success
+        const chatRes = await fetch(`${backendUrl}/api/chat/${selectedChat}`, {
+          credentials: "include",
+        });
+        updatedChat = await chatRes.json();
+      }
+
+      // Update frontend state with **full participants + roles**
+      setAllChats((prev) =>
+        prev.map((c) => (c.id === selectedChat ? updatedChat : c))
+      );
+      setCurrentChat(updatedChat);
+
+      setShowAddUserDialog(false);
+      setUsersToAdd([]);
+      setAddUserSearch("");
+
+      toast.success("Users added to group successfully");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to add users to group");
     }
-
-    // Update frontend state with **full participants + roles**
-    setAllChats(prev => prev.map(c => c.id === selectedChat ? updatedChat : c));
-    setCurrentChat(updatedChat);
-
-    setShowAddUserDialog(false);
-    setUsersToAdd([]);
-    setAddUserSearch("");
-
-    toast.success("Users added to group successfully");
-  } catch (err) {
-    console.error(err);
-    toast.error("Failed to add users to group");
-  }
-};
-
-
-
+  };
 
   const confirmMakeAdmin = async () => {
     if (!selectedChat || !userToAdmin) return;
@@ -321,11 +344,15 @@ const handleAddUsersToGroup = async () => {
     try {
       const res = await fetch(
         `${backendUrl}/api/chat/${selectedChat}/participants/${userToAdmin.userId}/make-admin`,
-        { method: 'PATCH', credentials: 'include' }
+        { method: "PATCH", credentials: "include" }
       );
 
       if (res.ok) {
-        toast.success(`${userToAdmin.fullName || userToAdmin.username || userToAdmin.userId} is now an admin`);
+        toast.success(
+          `${
+            userToAdmin.fullName || userToAdmin.username || userToAdmin.userId
+          } is now an admin`
+        );
       } else if (res.status === 400) {
         const data = await res.json();
         toast.error(data.error || "User is already an admin");
@@ -341,46 +368,43 @@ const handleAddUsersToGroup = async () => {
     }
   };
 
-
   const cancelMakeAdmin = () => {
-    setShowMakeAdminConfirmation(false)
-  }
-
+    setShowMakeAdminConfirmation(false);
+  };
 
   const cancelLeaveChat = () => {
-    setShowLeaveChatConfirmation(false)
-  }
+    setShowLeaveChatConfirmation(false);
+  };
 
   const cancelAddUsers = () => {
-    setShowAddUserDialog(false)
-    setSelectedUsers([])
-    setSearchQuery("")
-  }
+    setShowAddUserDialog(false);
+    setSelectedUsers([]);
+    setSearchQuery("");
+  };
 
   const handleLeaveChat = async () => {
     if (!selectedChat || !currentUserId) return;
-    
+
     try {
       const res = await fetch(
         `${backendUrl}/api/chat/${selectedChat}/participants/${currentUserId}`,
-        { method: 'DELETE', credentials: 'include' }
+        { method: "DELETE", credentials: "include" }
       );
 
       if (res.ok) {
-        setAllChats(prev => prev.filter(chat => chat.id !== selectedChat));
+        setAllChats((prev) => prev.filter((chat) => chat.id !== selectedChat));
         setSelectedChat(null);
         setShowLeaveChatConfirmation(false);
         setShowChatInfoDialog(false);
-        toast.success('Successfully left the group');
+        toast.success("Successfully left the group");
       } else {
-        throw new Error('Failed to leave group');
+        throw new Error("Failed to leave group");
       }
     } catch (err) {
       console.error(err);
-      toast.error('Failed to leave group');
+      toast.error("Failed to leave group");
     }
   };
-
 
   const confirmRemoveUser = async () => {
     if (!selectedChat || !userToRemove) return;
@@ -388,19 +412,23 @@ const handleAddUsersToGroup = async () => {
     try {
       const res = await fetch(
         `${backendUrl}/api/chat/${selectedChat}/participants/${userToRemove.userId}`,
-        { method: 'DELETE', credentials: 'include' }
+        { method: "DELETE", credentials: "include" }
       );
 
       if (res.ok) {
-        setAllChats(prev =>
-          prev.map(chat =>
+        setAllChats((prev) =>
+          prev.map((chat) =>
             chat.id === selectedChat
               ? {
                   ...chat,
-                  participants: chat.participants.filter(p => p.userId !== userToRemove.userId),
+                  participants: chat.participants.filter(
+                    (p) => p.userId !== userToRemove.userId
+                  ),
                   roles: chat.roles
                     ? Object.fromEntries(
-                        Object.entries(chat.roles).filter(([key]) => key !== userToRemove.userId)
+                        Object.entries(chat.roles).filter(
+                          ([key]) => key !== userToRemove.userId
+                        )
                       )
                     : chat.roles,
                 }
@@ -411,30 +439,37 @@ const handleAddUsersToGroup = async () => {
         setUserToRemove(null);
         setShowRemoveConfirmation(false);
         toast.success(
-          `${userToRemove.fullName || userToRemove.username || userToRemove.userId} removed from the group`
+          `${
+            userToRemove.fullName ||
+            userToRemove.username ||
+            userToRemove.userId
+          } removed from the group`
         );
       } else {
-        throw new Error('Failed to remove user from group');
+        throw new Error("Failed to remove user from group");
       }
     } catch (err) {
       console.error(err);
-      toast.error('Failed to remove user from group');
+      toast.error("Failed to remove user from group");
     }
   };
 
-
   const cancelRemoveUser = () => {
-    setShowRemoveConfirmation(false)
-  }
+    setShowRemoveConfirmation(false);
+  };
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-
 
   useEffect(() => {
     const client = stompRef.current;
     if (!selectedChat || !client || !isConnected) return;
 
-    console.log("Marking chat as read:", selectedChat, "Current user:", currentUserId);
+    console.log(
+      "Marking chat as read:",
+      selectedChat,
+      "Current user:",
+      currentUserId
+    );
 
     client.publish({
       destination: `/app/chat/${selectedChat}/read`,
@@ -521,16 +556,66 @@ const handleAddUsersToGroup = async () => {
 
   const handleChatUpdate = useCallback((updatedChat: ChatSessionDTO) => {
     console.log("handleChatUpdate called:", updatedChat);
-    
-    setAllChats(prev => 
-      prev.map(chat => 
-        chat.id === updatedChat.id 
-          ? { ...updatedChat, unreadForCurrentUser: updatedChat.unreadForCurrentUser } 
+
+    setAllChats((prev) =>
+      prev.map((chat) =>
+        chat.id === updatedChat.id
+          ? {
+              ...updatedChat,
+              unreadForCurrentUser: updatedChat.unreadForCurrentUser,
+            }
           : chat
       )
     );
   }, []);
 
+  const handleChatSessionUpdate = useCallback(
+    (updatedChat: ChatSessionDTO) => {
+      console.log("🔄 handleChatSessionUpdate called:", updatedChat);
+
+      setAllChats((prev) => {
+        const exists = prev.find((chat) => chat.id === updatedChat.id);
+
+        const unreadMap = updatedChat.unreadCount || {};
+        const keys = Object.keys(unreadMap);
+
+        const unreadForCurrentUser = currentUserId
+          ? unreadMap[currentUserId] ?? 0
+          : 0;
+
+        console.log("📬 Session update debug", {
+          chatId: updatedChat.id,
+          currentUserId,
+          unreadMap,
+          keys,
+          computedUnreadForCurrentUser: unreadForCurrentUser,
+        });
+
+        if (exists) {
+          return prev.map((chat) =>
+            chat.id === updatedChat.id
+              ? {
+                  ...chat,
+                  ...updatedChat,
+                  unreadCount: { ...unreadMap },
+                  unreadForCurrentUser,
+                }
+              : chat
+          );
+        } else {
+          return [
+            ...prev,
+            {
+              ...updatedChat,
+              unreadCount: { ...unreadMap },
+              unreadForCurrentUser,
+            },
+          ];
+        }
+      });
+    },
+    [currentUserId]
+  );
 
   useEffect(() => {
     if (!currentUserId || !backendUrl) return;
@@ -546,10 +631,9 @@ const handleAddUsersToGroup = async () => {
       heartbeatOutgoing: 4000,
       onConnect: () => {
         console.log("STOMP connected");
-        stompRef.current = client; // <- update ref here
-        setIsConnected(true); // <- update connection flag
+        stompRef.current = client;
+        setIsConnected(true);
 
-        // Subscriptions
         client.subscribe(`/user/queue/messages`, (msg) => {
           const newMessage = JSON.parse(msg.body);
           handleIncomingMessage(newMessage);
@@ -559,6 +643,23 @@ const handleAddUsersToGroup = async () => {
           const parsedUpdate = JSON.parse(update.body);
           console.log("Received chat update:", parsedUpdate);
           handleChatUpdate(parsedUpdate);
+        });
+
+        client.subscribe(`/user/queue/session-updates`, (update) => {
+          const parsedUpdate = JSON.parse(update.body);
+
+          // 🔧 Normalize unreadCount keys
+          if (parsedUpdate.unreadCount) {
+            const normalizedUnread: Record<string, number> = {};
+            Object.entries(parsedUpdate.unreadCount).forEach(([k, v]) => {
+              const normalizedKey = k.replace(/．/g, "."); // full-width dot → ASCII dot
+              normalizedUnread[normalizedKey] = v as number;
+            });
+            parsedUpdate.unreadCount = normalizedUnread;
+          }
+
+          console.log("Received session update (normalized):", parsedUpdate);
+          handleChatSessionUpdate(parsedUpdate);
         });
       },
       onStompError: (frame) => {
@@ -699,7 +800,6 @@ const handleAddUsersToGroup = async () => {
       fetchUsers();
     }
   }, [showAddChatDialog, showAddUserDialog, backendUrl]);
-
 
   // Fetch chat sessions
   useEffect(() => {
@@ -917,13 +1017,10 @@ const handleAddUsersToGroup = async () => {
 
   const [currentChat, setCurrentChat] = useState<ChatSessionDTO | null>(null);
 
-
-
   useEffect(() => {
-    const chat = allChats.find(c => c.id === selectedChat) ?? null;
+    const chat = allChats.find((c) => c.id === selectedChat) ?? null;
     setCurrentChat(chat);
   }, [allChats, selectedChat]);
-
 
   const currentMessages = (selectedChat && allMessages[selectedChat]) || [];
 
@@ -1039,7 +1136,6 @@ const handleAddUsersToGroup = async () => {
   useEffect(() => {
     scrollToBottom();
   }, [currentMessages, selectedChat, scrollToBottom]);
-
 
   return (
     <div className="w-full sm:max-w-8xl mx-auto space-y-6 mb-5 -ml-10 sm:ml-0">
@@ -1291,9 +1387,7 @@ const handleAddUsersToGroup = async () => {
                           <Info className="w-4 h-4 mr-2" />
                           View chat info
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => setShowChatInfoDialog(true)} // need changes
-                        >
+                        <DropdownMenuItem onClick={handleReport}>
                           <Flag className="w-4 h-4 mr-2" />
                           Report
                         </DropdownMenuItem>
@@ -1474,14 +1568,17 @@ const handleAddUsersToGroup = async () => {
                                 {isPrivateChat && !isMe && (
                                   <span className="ml-1">• Seen</span>
                                 )}
-                                  {currentChat.groupChat && !isMe && (
-                                    <span className="ml-1">
-                                      •{" "}
-                                      {senderInfo
-                                        ? `${senderInfo.fullName} @${senderInfo.username || senderInfo.userId}`
-                                        : "Removed User"}
-                                    </span>
-                                  )}
+                                {currentChat.groupChat && !isMe && (
+                                  <span className="ml-1">
+                                    •{" "}
+                                    {senderInfo
+                                      ? `${senderInfo.fullName} @${
+                                          senderInfo.username ||
+                                          senderInfo.userId
+                                        }`
+                                      : "Removed User"}
+                                  </span>
+                                )}
                               </p>
                             </div>
                           </div>
@@ -1744,236 +1841,264 @@ const handleAddUsersToGroup = async () => {
         </DialogContent>
       </Dialog>
 
-    {/* Chat Info Dialog */}
-    <Dialog open={showChatInfoDialog} onOpenChange={setShowChatInfoDialog}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Chat Information</DialogTitle>
-        </DialogHeader>
+      {/* Chat Info Dialog */}
+      <Dialog open={showChatInfoDialog} onOpenChange={setShowChatInfoDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Chat Information</DialogTitle>
+          </DialogHeader>
 
-        <div className="space-y-4">
-          {currentChat ? (
-            <>
-              {/* Chat Header */}
-              <div className="flex items-center gap-3 pb-4 border-b">
-                <div
-                  className={`w-12 h-12 rounded-lg flex items-center justify-center shadow-sm overflow-hidden ${
-                    currentChat.groupChat ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-700"
-                  }`}
-                >
-                  {currentChat.displayAvatar ? (
-                    <img
-                      src={currentChat.displayAvatar || "/public/images/placeholder.jpg"}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : currentChat.groupChat ? (
-                    <Users className="w-6 h-6" />
-                  ) : (
-                    <span className="font-semibold">{currentChat.displayAvatarInitials || "?"}</span>
-                  )}
-                </div>
-
-
-                <div className="flex-1">
-                  {currentChat.groupChat && currentChat.roles?.[currentUserId!] === "admin" ? (
-                    <div className="flex items-center gap-2">
-                      {isEditingName ? (
-                        <div className="flex items-center gap-2 flex-1">
-                          <input
-                            type="text"
-                            value={editedName}
-                            onChange={(e) => setEditedName(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") handleSaveName()
-                              if (e.key === "Escape") handleCancelEdit()
-                            }}
-                            className="flex-1 px-2 py-1 text-lg font-semibold border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter group name"
-                            autoFocus
-                          />
-                          <Button
-                            size="sm"
-                            onClick={handleSaveName}
-                            className="bg-green-600 hover:bg-green-700 text-white px-2 py-1"
-                          >
-                            <Check className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={handleCancelEdit}
-                            className="px-2 py-1 bg-transparent"
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      ) : (
-                        // DISPLAY MODE: Shows group name with edit button for admins
-                        <div className="flex items-center gap-2 flex-1">
-                          <h3 className="font-semibold text-lg flex-1">
-                            {currentChat.displayName || currentChat.groupName || "Unnamed Chat"}
-                          </h3>
-                          {/* EDIT BUTTON: Click this to modify group name */}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={handleEditName}
-                            className="hover:bg-blue-50 text-blue-600 p-1"
-                            title="Edit group name"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-
-                    <h3 className="font-semibold text-lg">
-                      {currentChat.displayName || currentChat.groupName || "Unnamed Chat"}
-                    </h3>
-                  )}
-                  <p className="text-sm text-gray-600">
-                    {currentChat.groupChat
-                      ? `${currentChat.participants?.length || 0} members`
-                      : currentChat.roles?.[currentChat.otherUserId || ""] || "member"}
-                  </p>
-                </div>
-              </div>
-
-              {/* Group Members */}
-              {currentChat.groupChat && (
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-medium">Members</h4>
-                    {currentChat.roles?.[currentUserId!] === "admin" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setShowAddUserDialog(true)}
-                      >
-                        <UserPlus className="w-4 h-4 mr-1" />
-                        Add
-                      </Button>
+          <div className="space-y-4">
+            {currentChat ? (
+              <>
+                {/* Chat Header */}
+                <div className="flex items-center gap-3 pb-4 border-b">
+                  <div
+                    className={`w-12 h-12 rounded-lg flex items-center justify-center shadow-sm overflow-hidden ${
+                      currentChat.groupChat
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    {currentChat.displayAvatar ? (
+                      <img
+                        src={
+                          currentChat.displayAvatar ||
+                          "/public/images/placeholder.jpg"
+                        }
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : currentChat.groupChat ? (
+                      <Users className="w-6 h-6" />
+                    ) : (
+                      <span className="font-semibold">
+                        {currentChat.displayAvatarInitials || "?"}
+                      </span>
                     )}
                   </div>
 
-                  <div className="max-h-40 overflow-y-auto space-y-2">
-                    {currentChat.participants?.map((participant, index) => {
-                      const isAdmin = currentUserId && currentChat?.roles?.[currentUserId] === "admin";
-
-                      const isCurrentUser = participant.userId === currentUserId;
-
-                      return (
-                        <div
-                           key={`${participant.userId}-${index}`}
-                          className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 border border-gray-100"
-                        >
-                          {/* Participant Info */}
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                              {participant.avatar ? (
-                                <img
-                                  src={participant.avatar}
-                                  alt="Profile"
-                                  className="w-full h-full object-cover rounded-full"
-                                />
-                              ) : (
-                                <User className="w-4 h-4 text-gray-600" />
-                              )}
-                            </div>
-
-                            <div className="flex-1 min-w-0">
-                              <div className="flex flex-col">
-                                {participant.fullName && (
-                                  <span className="text-sm font-medium text-gray-900 truncate">
-                                    {participant.fullName}
-                                  </span>
-                                )}
-                                {participant.username && (
-                                  <span className="text-xs text-gray-600 truncate">
-                                    @{participant.username}
-                                  </span>
-                                )}
-                                <span className="text-xs text-gray-500 truncate">
-                                  ID: {participant.userId}
-                                </span>
-                              </div>
-                            </div>
+                  <div className="flex-1">
+                    {currentChat.groupChat &&
+                    currentChat.roles?.[currentUserId!] === "admin" ? (
+                      <div className="flex items-center gap-2">
+                        {isEditingName ? (
+                          <div className="flex items-center gap-2 flex-1">
+                            <input
+                              type="text"
+                              value={editedName}
+                              onChange={(e) => setEditedName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleSaveName();
+                                if (e.key === "Escape") handleCancelEdit();
+                              }}
+                              className="flex-1 px-2 py-1 text-lg font-semibold border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Enter group name"
+                              autoFocus
+                            />
+                            <Button
+                              size="sm"
+                              onClick={handleSaveName}
+                              className="bg-green-600 hover:bg-green-700 text-white px-2 py-1"
+                            >
+                              <Check className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={handleCancelEdit}
+                              className="px-2 py-1 bg-transparent"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
                           </div>
-
-                          {/* Admin / Remove Buttons */}
-                          {isAdmin && !isCurrentUser && (
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="hover:bg-red-50 w-6 h-6 p-0"
-                                onClick={() => {
-                                  setUserToAdmin({
-                                    userId: participant.userId,
-                                    fullName: participant.fullName,
-                                    username: participant.username,
-                                  });
-                                  setShowMakeAdminConfirmation(true);
-                                }}
-                              >
-                                <User className="w-4 h-4 text-gray-500" />
-                              </Button>
-
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 w-6 h-6 p-0"
-                                onClick={() => {
-                                  setUserToRemove({
-                                    userId: participant.userId,
-                                    fullName: participant.fullName,
-                                    username: participant.username,
-                                  });
-                                  setShowRemoveConfirmation(true);
-                                }}
-                              >
-                                <X className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                        ) : (
+                          // DISPLAY MODE: Shows group name with edit button for admins
+                          <div className="flex items-center gap-2 flex-1">
+                            <h3 className="font-semibold text-lg flex-1">
+                              {currentChat.displayName ||
+                                currentChat.groupName ||
+                                "Unnamed Chat"}
+                            </h3>
+                            {/* EDIT BUTTON: Click this to modify group name */}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={handleEditName}
+                              className="hover:bg-blue-50 text-blue-600 p-1"
+                              title="Edit group name"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <h3 className="font-semibold text-lg">
+                        {currentChat.displayName ||
+                          currentChat.groupName ||
+                          "Unnamed Chat"}
+                      </h3>
+                    )}
+                    <p className="text-sm text-gray-600">
+                      {currentChat.groupChat
+                        ? `${currentChat.participants?.length || 0} members`
+                        : currentChat.roles?.[currentChat.otherUserId || ""] ||
+                          "member"}
+                    </p>
                   </div>
                 </div>
-              )}
-            </>
-          ) : (
-            <p className="text-gray-500">No chat selected</p>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
 
+                {/* Group Members */}
+                {currentChat.groupChat && (
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium">Members</h4>
+                      {currentChat.roles?.[currentUserId!] === "admin" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setShowAddUserDialog(true)}
+                        >
+                          <UserPlus className="w-4 h-4 mr-1" />
+                          Add
+                        </Button>
+                      )}
+                    </div>
 
+                    <div className="max-h-40 overflow-y-auto space-y-2">
+                      {currentChat.participants?.map((participant, index) => {
+                        const isAdmin =
+                          currentUserId &&
+                          currentChat?.roles?.[currentUserId] === "admin";
 
-      <AlertDialog open={showLeaveChatConfirmation} onOpenChange={setShowLeaveChatConfirmation}>
+                        const isCurrentUser =
+                          participant.userId === currentUserId;
+
+                        return (
+                          <div
+                            key={`${participant.userId}-${index}`}
+                            className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 border border-gray-100"
+                          >
+                            {/* Participant Info */}
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                {participant.avatar ? (
+                                  <img
+                                    src={participant.avatar}
+                                    alt="Profile"
+                                    className="w-full h-full object-cover rounded-full"
+                                  />
+                                ) : (
+                                  <User className="w-4 h-4 text-gray-600" />
+                                )}
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-col">
+                                  {participant.fullName && (
+                                    <span className="text-sm font-medium text-gray-900 truncate">
+                                      {participant.fullName}
+                                    </span>
+                                  )}
+                                  {participant.username && (
+                                    <span className="text-xs text-gray-600 truncate">
+                                      @{participant.username}
+                                    </span>
+                                  )}
+                                  <span className="text-xs text-gray-500 truncate">
+                                    ID: {participant.userId}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Admin / Remove Buttons */}
+                            {isAdmin && !isCurrentUser && (
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="hover:bg-red-50 w-6 h-6 p-0"
+                                  onClick={() => {
+                                    setUserToAdmin({
+                                      userId: participant.userId,
+                                      fullName: participant.fullName,
+                                      username: participant.username,
+                                    });
+                                    setShowMakeAdminConfirmation(true);
+                                  }}
+                                >
+                                  <User className="w-4 h-4 text-gray-500" />
+                                </Button>
+
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 w-6 h-6 p-0"
+                                  onClick={() => {
+                                    setUserToRemove({
+                                      userId: participant.userId,
+                                      fullName: participant.fullName,
+                                      username: participant.username,
+                                    });
+                                    setShowRemoveConfirmation(true);
+                                  }}
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-gray-500">No chat selected</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={showLeaveChatConfirmation}
+        onOpenChange={setShowLeaveChatConfirmation}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Leave Chat</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to leave{" "}
-              <span className="font-medium">{currentChat?.groupName || currentChat?.displayName || "this chat"}</span>?
-              You will no longer receive messages from this group and will need to be re-added to participate again.
+              <span className="font-medium">
+                {currentChat?.groupName ||
+                  currentChat?.displayName ||
+                  "this chat"}
+              </span>
+              ? You will no longer receive messages from this group and will
+              need to be re-added to participate again.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelLeaveChat}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleLeaveChat} className="bg-red-600 hover:bg-red-700 focus:ring-red-600">
+            <AlertDialogCancel onClick={cancelLeaveChat}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleLeaveChat}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
               Leave Chat
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog> 
+      </AlertDialog>
 
-      <AlertDialog open={showRemoveConfirmation} onOpenChange={setShowRemoveConfirmation}>
+      <AlertDialog
+        open={showRemoveConfirmation}
+        onOpenChange={setShowRemoveConfirmation}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove User</AlertDialogTitle>
@@ -1988,16 +2113,23 @@ const handleAddUsersToGroup = async () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelRemoveUser}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmRemoveUser} className="bg-red-600 hover:bg-red-700 focus:ring-red-600">
+            <AlertDialogCancel onClick={cancelRemoveUser}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRemoveUser}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
               Remove User
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-
-      <AlertDialog open={showMakeAdminConfirmation} onOpenChange={setShowMakeAdminConfirmation}>
+      <AlertDialog
+        open={showMakeAdminConfirmation}
+        onOpenChange={setShowMakeAdminConfirmation}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Make Admin</AlertDialogTitle>
@@ -2008,12 +2140,18 @@ const handleAddUsersToGroup = async () => {
                 {userToAdmin?.username ? `(${userToAdmin.username}) ` : ""}
                 {userToAdmin?.userId ? `- ${userToAdmin.userId}` : ""}
               </span>{" "}
-              an admin of this group chat? They will be able to add/remove members and manage other users.
+              an admin of this group chat? They will be able to add/remove
+              members and manage other users.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelMakeAdmin}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmMakeAdmin} className="bg-blue-600 hover:bg-blue-700 focus:ring-blue-600">
+            <AlertDialogCancel onClick={cancelMakeAdmin}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmMakeAdmin}
+              className="bg-blue-600 hover:bg-blue-700 focus:ring-blue-600"
+            >
               Make Admin
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -2041,8 +2179,8 @@ const handleAddUsersToGroup = async () => {
             {/* Selected Users */}
             {usersToAdd.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {usersToAdd.map(userId => {
-                  const user = availableUsers.find(u => u.id === userId);
+                {usersToAdd.map((userId) => {
+                  const user = availableUsers.find((u) => u.id === userId);
                   return user ? (
                     <div
                       key={userId}
@@ -2052,8 +2190,8 @@ const handleAddUsersToGroup = async () => {
                       <button
                         onClick={() => {
                           console.log("Removing user from selection:", userId);
-                          setUsersToAdd(prev => {
-                            const newState = prev.filter(id => id !== userId);
+                          setUsersToAdd((prev) => {
+                            const newState = prev.filter((id) => id !== userId);
                             console.log("usersToAdd after remove:", newState);
                             return newState;
                           });
@@ -2070,20 +2208,29 @@ const handleAddUsersToGroup = async () => {
             {/* Available Users List */}
             <div className="max-h-60 overflow-y-auto space-y-2">
               {availableUsers
-                .filter(user =>
-                  !currentChat?.participants?.some(p => p.userId === user.id) &&
-                  (user.name.toLowerCase().includes(addUserSearch.toLowerCase()) ||
-                  user.username.toLowerCase().includes(addUserSearch.toLowerCase()) ||
-                  user.id.toLowerCase().includes(addUserSearch.toLowerCase()))
+                .filter(
+                  (user) =>
+                    !currentChat?.participants?.some(
+                      (p) => p.userId === user.id
+                    ) &&
+                    (user.name
+                      .toLowerCase()
+                      .includes(addUserSearch.toLowerCase()) ||
+                      user.username
+                        .toLowerCase()
+                        .includes(addUserSearch.toLowerCase()) ||
+                      user.id
+                        .toLowerCase()
+                        .includes(addUserSearch.toLowerCase()))
                 )
-                .map(user => (
+                .map((user) => (
                   <div
                     key={user.id}
                     onClick={() => {
                       console.log("Clicked user:", user);
                       console.log("usersToAdd before add:", usersToAdd);
                       if (!usersToAdd.includes(user.id)) {
-                        setUsersToAdd(prev => {
+                        setUsersToAdd((prev) => {
                           const newState = [...prev, user.id];
                           console.log("usersToAdd after add:", newState);
                           return newState;
@@ -2092,8 +2239,8 @@ const handleAddUsersToGroup = async () => {
                     }}
                     className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer ${
                       usersToAdd.includes(user.id)
-                        ? 'bg-blue-50 border border-blue-200'
-                        : 'hover:bg-gray-50'
+                        ? "bg-blue-50 border border-blue-200"
+                        : "hover:bg-gray-50"
                     }`}
                   >
                     <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
@@ -2105,14 +2252,16 @@ const handleAddUsersToGroup = async () => {
                         />
                       ) : (
                         <span className="text-xs font-semibold text-gray-700">
-                          {user.name ? user.name.charAt(0).toUpperCase() : '?'}
+                          {user.name ? user.name.charAt(0).toUpperCase() : "?"}
                         </span>
                       )}
                     </div>
                     <div className="flex-1">
                       <p className="font-medium text-sm truncate">
                         {user.name}
-                        <span className="text-gray-500 text-xs ml-1">@{user.username}</span>
+                        <span className="text-gray-500 text-xs ml-1">
+                          @{user.username}
+                        </span>
                       </p>
                       <p className="text-xs text-gray-500">{user.role}</p>
                     </div>
@@ -2139,7 +2288,10 @@ const handleAddUsersToGroup = async () => {
               </Button>
               <Button
                 onClick={() => {
-                  console.log("Add Users button clicked. Final usersToAdd:", usersToAdd);
+                  console.log(
+                    "Add Users button clicked. Final usersToAdd:",
+                    usersToAdd
+                  );
                   handleAddUsersToGroup();
                 }}
                 disabled={usersToAdd.length === 0}
@@ -2151,7 +2303,6 @@ const handleAddUsersToGroup = async () => {
           </div>
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }

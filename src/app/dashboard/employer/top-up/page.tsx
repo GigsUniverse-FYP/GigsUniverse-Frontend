@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,67 +20,117 @@ import {
   Calendar,
   CheckCircle,
 } from "lucide-react"
+import { toast } from "react-toastify"
 
-const quickAmounts = [50, 100, 250, 500, 1000, 2500]
+const quickAmounts = [50, 100, 500, 1000, 2500, 5000]
 
-const transactionHistory = [
-  {
-    id: "TXN-001",
-    type: "Top-up",
-    amount: 500,
-    method: "Credit Card",
-    status: "Completed",
-    date: "Dec 8, 2024",
-    description: "Account credit top-up",
-  },
-  {
-    id: "TXN-002",
-    type: "Payment",
-    amount: -1200,
-    method: "Account Credit",
-    status: "Completed",
-    date: "Dec 7, 2024",
-    description: "Payment to Sarah Johnson - React Developer",
-  },
-  {
-    id: "TXN-003",
-    type: "Top-up",
-    amount: 1000,
-    method: "Bank Transfer",
-    status: "Completed",
-    date: "Dec 5, 2024",
-    description: "Account credit top-up",
-  },
-  {
-    id: "TXN-004",
-    type: "Payment",
-    amount: -850,
-    method: "Account Credit",
-    status: "Completed",
-    date: "Dec 4, 2024",
-    description: "Payment to Mike Chen - UI/UX Design",
-  },
-  {
-    id: "TXN-005",
-    type: "Refund",
-    amount: 300,
-    method: "Account Credit",
-    status: "Completed",
-    date: "Dec 2, 2024",
-    description: "Refund for cancelled project",
-  },
-]
+// mock sample data
+// const transactionHistory = [
+//   {
+//     id: "TXN-001",
+//     type: "Top-up",
+//     amount: 500,
+//     method: "Credit Card",
+//     status: "Completed",
+//     date: "Dec 8, 2024",
+//     description: "Account credit top-up",
+//     currency: "usd"
+//   },
+//   {
+//     id: "TXN-002",
+//     type: "Payment",
+//     amount: -1200,
+//     method: "Account Credit",
+//     status: "Completed",
+//     date: "Dec 7, 2024",
+//     description: "Payment to Sarah Johnson - React Developer",
+//     currency: "usd"
+//   },
+// ]
+
+interface Transaction {
+  id: string
+  type: string
+  amount: number
+  method: string
+  status: string
+  date: string
+  description: string
+  currency: string
+}
 
 export default function TopUpPage() {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null)
   const [customAmount, setCustomAmount] = useState("")
   const [paymentMethod, setPaymentMethod] = useState("")
 
-  const currentBalance = 2450.75
+  const [transactionHistory, setTransactionHistory] = useState<Transaction[]>([])
+  const [displayedTransactions, setDisplayedTransactions] = useState(5)
+
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
+
+  const [currentBalance, setCurrentBalance] = useState<number>(0)
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      const res = await fetch(`${backendUrl}/api/transactions/available-credits`, {
+        credentials: "include",
+      })
+      if (!res.ok) throw new Error("Failed to fetch balance")
+      const amountInCents = await res.json()
+      setCurrentBalance(amountInCents / 100) // convert cents → dollars
+    }
+
+    fetchBalance()
+  }, [])
+
+  useEffect(() => {
+    const fetchTransactionHistory = async () => {
+      const res = await fetch(`${backendUrl}/api/transactions/history`, {
+        credentials: "include",
+      })
+      if (!res.ok) throw new Error("Failed to fetch transaction history")
+      const data = await res.json()
+
+      setTransactionHistory(data)
+    }
+
+    fetchTransactionHistory()
+  }, [])
+
+  const handleTopUp = async () => {
+    const amount = getFinalAmount()
+    if (amount <= 0 || !paymentMethod) return
+
+    try {
+      const res = await fetch(`${backendUrl}/api/transactions/topup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          amount: amount * 100,
+          method: paymentMethod,
+        }),
+      })
+
+      if (!res.ok) throw new Error("Failed to initiate top-up")
+
+      const data = await res.json()
+
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("Something went wrong while processing your payment")
+    }
+  }
 
   const handleQuickAmountSelect = (amount: number) => {
     setSelectedAmount(amount)
-    setCustomAmount("")
+    setCustomAmount(amount.toString())
   }
 
   const handleCustomAmountChange = (value: string) => {
@@ -96,16 +146,34 @@ export default function TopUpPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Completed":
+      case "success":
         return "bg-green-100 text-green-800 border border-green-200"
-      case "Pending":
+      case "pending":
         return "bg-yellow-100 text-yellow-800 border border-yellow-200"
-      case "Failed":
+      case "failed":
         return "bg-red-100 text-red-800 border border-red-200"
       default:
         return "bg-gray-100 text-gray-700 border border-gray-200"
     }
   }
+
+  const getTransactionMethodLabel = (method: string) => {
+    switch (method) {
+      case "us_bank_account":
+        return "Bank Transfer"
+      case "card":
+        return "Credit / Debit Card"
+      default:
+        return "Other"
+    }
+  }
+
+  const handleLoadMore = () => {
+    setDisplayedTransactions((prev) => prev + 5)
+  }
+
+  const visibleTransactions = transactionHistory.slice(0, displayedTransactions)
+  const hasMoreTransactions = displayedTransactions < transactionHistory.length
 
   return (
     <div className="w-full sm:max-w-8xl mx-auto space-y-6 mb-5 -ml-10 sm:ml-0">
@@ -199,10 +267,10 @@ export default function TopUpPage() {
                   <SelectValue placeholder="Select payment method" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="credit-card">Credit Card (****1234)</SelectItem>
-                  <SelectItem value="debit-card">Debit Card (****5678)</SelectItem>
-                  <SelectItem value="bank-transfer">Bank Transfer</SelectItem>
-                  <SelectItem value="paypal">PayPal</SelectItem>
+                  <SelectItem value="card">Credit / Debit Card</SelectItem>
+                  <SelectItem value="us_bank_account">Bank Transfer (ACH / Wire)</SelectItem>
+                  <SelectItem value="apple_pay">Apple Pay</SelectItem>
+                  <SelectItem value="google_pay">Google Pay</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -238,8 +306,9 @@ export default function TopUpPage() {
 
             {/* Submit Button */}
             <Button
-              className="w-full bg-black hover:bg-gray-800 text-white h-12 rounded-lg font-semibold"
+              className="w-full bg-black hover:bg-gray-800 text-white h-12 rounded-lg font-semibold cursor-pointer"
               disabled={getFinalAmount() === 0 || !paymentMethod}
+              onClick={handleTopUp}
             >
               <CreditCard className="w-4 h-4 mr-2" />
               Add ${getFinalAmount().toLocaleString()} to Account
@@ -302,11 +371,11 @@ export default function TopUpPage() {
               </div>
               <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
                 <Wallet className="w-5 h-5 text-gray-600" />
-                <span className="text-sm font-medium text-gray-900">Bank Transfer</span>
+                <span className="text-sm font-medium text-gray-900">Bank Transfers</span>
               </div>
               <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
                 <DollarSign className="w-5 h-5 text-gray-600" />
-                <span className="text-sm font-medium text-gray-900">PayPal</span>
+                <span className="text-sm font-medium text-gray-900">E-Wallets</span>
               </div>
             </CardContent>
           </Card>
@@ -325,7 +394,7 @@ export default function TopUpPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {transactionHistory.map((transaction) => (
+            {visibleTransactions.map((transaction) => (
               <div
                 key={transaction.id}
                 className="flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 hover:border-black transition-all duration-200"
@@ -341,34 +410,42 @@ export default function TopUpPage() {
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-semibold text-gray-900 text-sm">{transaction.description}</p>
-                      <Badge className={getStatusColor(transaction.status)}>{transaction.status}</Badge>
+                      <Badge className={getStatusColor(transaction.status)}>
+                        {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+                      </Badge>
                     </div>
                     <div className="flex items-center gap-4 text-xs text-gray-500">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
                         {transaction.date}
                       </span>
-                      <span>{transaction.method}</span>
-                      <span>{transaction.id}</span>
+                      <span>{getTransactionMethodLabel(transaction.method)}</span>
+                      <span>TXN-{transaction.id}</span>
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className={`font-bold text-lg ${transaction.amount > 0 ? "text-green-600" : "text-gray-900"}`}>
-                    {transaction.amount > 0 ? "+" : ""}${Math.abs(transaction.amount).toLocaleString()}
+                    {new Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: transaction.currency.toUpperCase(),
+                    }).format(transaction.amount / 100)}
                   </p>
                 </div>
               </div>
             ))}
           </div>
-          <div className="mt-6 text-center">
-            <Button
-              variant="outline"
-              className="border border-gray-200 bg-white hover:bg-gray-50 h-11 px-8 rounded-lg font-semibold"
-            >
-              Load More Transactions
-            </Button>
-          </div>
+          {hasMoreTransactions && (
+            <div className="mt-6 text-center">
+              <Button
+                variant="outline"
+                className="border border-gray-200 bg-white hover:bg-gray-50 h-11 px-8 rounded-lg font-semibold"
+                onClick={handleLoadMore}
+              >
+                Load More Transactions
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

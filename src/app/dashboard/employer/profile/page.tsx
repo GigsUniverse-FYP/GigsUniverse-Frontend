@@ -37,6 +37,7 @@ import {
   Eye,
   Upload,
   Trash2,
+  CheckCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConfirmationDialog } from "../../../components/employer_components/confirmation-dialog";
@@ -49,6 +50,7 @@ import {
   educationLevels,
 } from "../lib/onboarding-data-emp";
 import { toast } from "react-toastify";
+import Link from "next/link";
 
 
 interface EmployerProfile {
@@ -144,6 +146,13 @@ const defaultJobHistory: jobHistoryRecord = {
   ],
 };
 
+
+interface ProfileCompanyDTO {
+  companyId: number;
+  companyName: string;
+  role: string;
+}
+
 export default function EmployerProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<EmployerProfile>(
@@ -154,7 +163,33 @@ export default function EmployerProfile() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
 
+  const [company, setCompany] = useState<ProfileCompanyDTO | null>(null);
+
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+  useEffect(() => {
+    const fetchCompany = async () => {
+      try {
+        const res = await fetch(`${backendUrl}/api/company/my-profile-company`, {
+          credentials: "include",
+        });
+        if (res.status === 204) {
+          setCompany(null); 
+        } else if (res.ok) {
+          const data: ProfileCompanyDTO = await res.json();
+          setCompany(data);
+
+          console.log(data);
+        } else {
+          console.error("Failed to fetch company:", res.statusText);
+        }
+      } catch (err) {
+        console.error(err);
+      } 
+    };
+
+    fetchCompany();
+  }, []);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -932,6 +967,22 @@ export default function EmployerProfile() {
                       )}
                     </div>
                   </div>
+                    {company && (
+                      <div className="mt-3 pt-4">
+                        <div className="flex items-center justify-center">
+                          <CheckCircle className="w-5 h-5 text-blue-500 mr-2" />
+                          <span className="text-sm font-medium text-gray-700">
+                            Official <span className="capitalize">{company.role}</span> in{" "}
+                            <Link
+                              href={`/company/${company.companyId}`}
+                              className="text-blue-600 font-medium hover:text-blue-700 underline"
+                            >
+                              {company.companyName}
+                            </Link>
+                          </span>
+                        </div>
+                      </div>
+                    )}
                 </CardContent>
               </Card>
 

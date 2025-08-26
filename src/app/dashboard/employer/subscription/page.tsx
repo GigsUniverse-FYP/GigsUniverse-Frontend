@@ -2,8 +2,37 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle, HelpCircle, CreditCard, Shield, Clock } from "lucide-react"
-import { useState } from "react"
+import { CheckCircle, HelpCircle, CreditCard, Shield, Clock, FileText, DollarSign, Calendar, CheckCircleIcon } from "lucide-react"
+import { useEffect, useState } from "react"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { toast } from "react-toastify"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+
+
+  interface BillingHistoryItem {
+    stripeProductName: string
+    latestInvoiceId: string
+    amountPaid: number
+    currency: string
+    createdAt: string 
+    stripeSubscriptionId: string
+    status: string
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+  }
+
+  const formatAmount = (amount: number, currency: string) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency.toUpperCase(),
+    }).format(amount / 100)
+  }
 
   const employerPlans = [
     {
@@ -41,15 +70,122 @@ import { useState } from "react"
   ]
 
 export default function SubscriptionPage() {
-  // Simulate current user plan - you can replace this with actual user data
-  const [currentPlan, setCurrentPlan] = useState("Free") // or "Premium Freelancer"
+  const [currentPlan, setCurrentPlan] = useState("Free")
+  const [premium, setPremium] = useState<boolean | null>(null)
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+  const [showBillingHistory, setShowBillingHistory] = useState(false)
+  const [billingHistory, setBillingHistory] = useState<BillingHistoryItem[]>([])
+  const [loadingBillingHistory, setLoadingBillingHistory] = useState(false)
+
+
+  const [showCancelSubscription, setShowCancelSubscription] = useState(false);
+
+    useEffect(() => {
+      if (showBillingHistory) {
+        setLoadingBillingHistory(true);
+        fetch(`${backendUrl}/api/employer/subscription/bill-data`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include", 
+        })
+          .then((res) => {
+            if (!res.ok) {
+              throw new Error("Failed to fetch billing history");
+            }
+            return res.json();
+          })
+          .then((data: BillingHistoryItem[]) => {
+            setBillingHistory(data);
+          })
+          .catch((err) => {
+            console.error(err);
+            setBillingHistory([]);
+          })
+          .finally(() => {
+            setLoadingBillingHistory(false);
+          });
+      }
+    }, [showBillingHistory]);
+  
+  const purchaseSubscription = async () => {
+    const res = await fetch(`${backendUrl}/api/employer/subscription/purchase`, {
+      method: "POST",
+      credentials: "include",
+    });
+
+    if (!res.ok) throw new Error("Purchase failed");
+
+    const data = await res.json();
+    window.location.href = data.url;
+  };
+
+
+  const cancelSubscription = async () => {
+    const res = await fetch(`${backendUrl}/api/employer/subscription/cancel/immediate`, {
+      method: "POST",
+      credentials: "include",
+    })
+    if (!res.ok) {
+      toast.error("Subscription Already Cancelled.");
+      setTimeout(() => window.location.reload(), 3000);
+    }else{
+      toast.success("Subscription Terminated Successfully.");
+    }
+  }
+
+  const handlePlanAction = async (planName: string) => {
+    if (planName === "Premium Employer") {
+      try {
+        await purchaseSubscription()
+      } catch (error) {
+        console.error("Upgrade failed", error)
+      }
+    } else if (planName === "Free" && currentPlan === "Premium Employer") {
+      try {
+        setShowCancelSubscription(true);
+      } catch (error) {
+        console.error("Downgrade failed", error)
+      }
+    }
+  }
+
+  useEffect(() => {
+      const fetchPremiumStatus = async () => {
+        try {
+          const res = await fetch(`${backendUrl}/api/employer/subscription/premium-status`, {
+            method: "GET",
+            credentials: "include", 
+          })
+  
+          if (!res.ok) {
+            throw new Error("Failed to fetch premium status")
+          }
+  
+          const data: boolean = await res.json()
+          setPremium(data)
+  
+          // Map boolean to plan name
+          setCurrentPlan(data ? "Premium Employer" : "Free")
+        } catch (error) {
+          console.error(error)
+          setPremium(null)
+          setCurrentPlan("Free")
+        }
+      }
+  
+      fetchPremiumStatus()
+    }, [])
+  
 
   const getButtonText = (planName: string) => {
     if (currentPlan === planName) {
       return "Current Plan"
     }
     if (planName === "Free") {
-      return currentPlan === "Premium Freelancer" ? "Downgrade to Free" : "Get Started Free"
+      return currentPlan === "Premium Employer" ? "Downgrade to Free" : "Get Started Free"
     }
     return "Upgrade to Premium"
   }
@@ -120,6 +256,7 @@ export default function SubscriptionPage() {
                     }`}
                     size="lg"
                     disabled={isCurrentPlan(plan.name)}
+                    onClick={() => handlePlanAction(plan.name)}
                   >
                     {getButtonText(plan.name)}
                   </Button>
@@ -158,7 +295,9 @@ export default function SubscriptionPage() {
                   </div>
                 </div>
               )}
-              <Button variant="outline" className="w-full border border-gray-200 bg-white hover:bg-gray-50 rounded-lg">
+              <Button variant="outline" className="w-full border border-gray-200 bg-white hover:bg-gray-50 rounded-lg"
+              onClick={()=> setShowBillingHistory(true)}
+              >
                 Manage Billing
               </Button>
             </CardContent>
@@ -201,6 +340,130 @@ export default function SubscriptionPage() {
           </Card>
         </div>
       </div>
+
+
+      <AlertDialog open={showCancelSubscription} onOpenChange={setShowCancelSubscription}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to Cancel Freelancer Premium Subscription? Your Subscription will only End After Your Current Billing Cycle Ends.
+              # For Testing Purpose, this is set as Immediate Terminating For Now.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowCancelSubscription(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => cancelSubscription()} className="bg-red-600 hover:bg-red-700 focus:ring-red-600">
+              Cancel Subscription
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog> 
+
+
+      <Dialog open={showBillingHistory} onOpenChange={setShowBillingHistory}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Billing History
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="mt-4">
+            {loadingBillingHistory ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+                <span className="ml-2 text-gray-600">Loading billing history...</span>
+              </div>
+            ) : billingHistory.length === 0 ? (
+              <div className="text-center py-8">
+                <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">No billing history found</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {billingHistory.map((item, index) => (
+                  <Card key={index} className="border border-gray-200">
+                    <CardContent className="p-6">
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          <div className="space-y-2 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <span className="font-semibold text-gray-900 text-sm whitespace-nowrap">
+                                {formatAmount(item.amountPaid, item.currency)}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-600">Amount Paid</p>
+                          </div>
+
+                          <div className="space-y-2 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <span className="font-semibold text-gray-900 text-sm whitespace-nowrap">
+                                {formatDate(item.createdAt)}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-600">Payment Date</p>
+                          </div>
+
+                          <div className="space-y-2 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <Shield className="w-4 h-4 text-purple-600" />
+                              <span className="font-semibold text-gray-900 text-sm whitespace-nowrap">
+                                {item.stripeProductName}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-600">Product</p>
+                          </div>
+                        </div>
+
+                        <div className="pt-4 border-t border-gray-100 space-y-3">
+                            <div className="space-y-1">
+                              <div className="flex items-start gap-2">
+                                <CheckCircleIcon className="w-3 h-3 text-orange-600 mt-2 flex-shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                  <span className="font-mono text-xs text-gray-900 break-all">
+                                    {item.status}
+                                  </span>
+                                </div>
+                              </div>
+                              <p className="text-xs text-gray-600 ml-5">Status</p>
+                            </div>
+                            
+                          <div className="space-y-1">
+                            <div className="flex items-start gap-2">
+                              <FileText className="w-3 h-3 text-orange-600 mt-2 flex-shrink-0" />
+                              <div className="min-w-0 flex-1">
+                                <span className="font-mono text-xs text-gray-900 break-all">
+                                  {item.latestInvoiceId}
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-xs text-gray-600 ml-5">Invoice ID</p>
+                          </div>
+
+                          <div className="space-y-1">
+                            <div className="flex items-start gap-2">
+                              <CreditCard className="w-3 h-3 text-indigo-600 mt-2 flex-shrink-0" />
+                              <div className="min-w-0 flex-1">
+                                <span className="font-mono text-xs text-gray-900 break-all">
+                                  {item.stripeSubscriptionId}
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-xs text-gray-600 ml-5">Subscription ID</p>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   )
 }

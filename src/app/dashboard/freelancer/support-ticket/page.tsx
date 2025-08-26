@@ -507,6 +507,7 @@ export default function SupportTicketPage() {
                       <SelectItem value="general">General Inquiry</SelectItem>
                       <SelectItem value="bug">Bug Report</SelectItem>
                       <SelectItem value="feature">Feature Request</SelectItem>
+                      <SelectItem value="report">Report</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
