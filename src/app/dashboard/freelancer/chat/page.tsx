@@ -146,6 +146,28 @@ interface ChatMessage {
   }[];
 }
 
+function sortChatSessions(
+  sessions: ChatSessionDTO[],
+  currentUserId?: string | null
+) {
+  return [...sessions].sort((a, b) => {
+    const unreadA = currentUserId ? a.unreadCount?.[currentUserId] ?? 0 : 0;
+    const unreadB = currentUserId ? b.unreadCount?.[currentUserId] ?? 0 : 0;
+
+    if (unreadA > 0 && unreadB === 0) return -1;
+    if (unreadB > 0 && unreadA === 0) return 1;
+
+    const timeA = a.lastMessage?.timestamp
+      ? new Date(a.lastMessage.timestamp).getTime()
+      : 0;
+    const timeB = b.lastMessage?.timestamp
+      ? new Date(b.lastMessage.timestamp).getTime()
+      : 0;
+
+    return timeB - timeA;
+  });
+}
+
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 Bytes";
   const k = 1024;
@@ -816,10 +838,12 @@ export default function ChatInterface() {
         console.log("Fetched chat sessions:", sessions);
 
         if (mounted) {
-          setAllChats(sessions);
+          const sorted = sortChatSessions(sessions, currentUserId);
+          setAllChats(sorted);
+
           // Auto-select first chat if available
-          if (sessions.length > 0) {
-            setSelectedChat(sessions[0].id);
+          if (sorted.length > 0) {
+            setSelectedChat(sorted[0].id);
           }
         }
       } catch (err) {
@@ -833,7 +857,7 @@ export default function ChatInterface() {
     return () => {
       mounted = false;
     };
-  }, [backendUrl]);
+  }, [backendUrl, currentUserId]);
 
   const fetchMessages = async (chatId: string) => {
     try {
@@ -888,12 +912,14 @@ export default function ChatInterface() {
       return;
 
     const tempId = `temp-${Date.now()}`;
+    const now = new Date().toISOString();
+
     const newMessage: ChatMessage = {
       id: tempId,
       sender: currentUserId || "",
       receiver: "",
       message: message,
-      time: new Date().toISOString(),
+      time: now,
       files: selectedFiles.map((file) => ({
         name: file.name,
         size: file.size,
@@ -902,13 +928,42 @@ export default function ChatInterface() {
       })),
     };
 
-    // Optimistically add the message to UI
     setAllMessages((prev) => {
       const existingMessages = prev[selectedChat] || [];
       return {
         ...prev,
         [selectedChat]: [...existingMessages, newMessage],
       };
+    });
+
+    setAllChats((prev) => {
+      const updated = prev.map((chat) =>
+        chat.id === selectedChat
+          ? {
+              ...chat,
+              lastMessage: {
+                messageId: tempId,
+                senderId: currentUserId || "",
+                contentPreview:
+                  message.trim() || (selectedFiles.length > 0 ? "[File]" : ""),
+                timestamp: now,
+              },
+              updatedAt: now,
+
+              unreadCount: {
+                ...(chat.unreadCount || {}),
+                [currentUserId || ""]: 0,
+              },
+              unreadForCurrentUser: 0,
+            }
+          : chat
+      );
+
+      return updated.sort(
+        (a, b) =>
+          new Date(b.lastMessage?.timestamp || b.updatedAt || 0).getTime() -
+          new Date(a.lastMessage?.timestamp || a.updatedAt || 0).getTime()
+      );
     });
 
     const filesToSend = [...selectedFiles];
@@ -918,27 +973,24 @@ export default function ChatInterface() {
 
     try {
       if (stompClient && isConnected) {
-        // Convert files to base64 for WebSocket
         const filesWithContent = await Promise.all(
-          filesToSend.map(async (file) => {
-            const base64Content = await new Promise<string>((resolve) => {
-              const reader = new FileReader();
-              reader.onload = () => {
-                const result = reader.result as string;
-                // Remove data URL prefix to get just base64
-                const base64 = result.split(",")[1] || result;
-                resolve(base64);
-              };
-              reader.readAsDataURL(file);
-            });
-
-            return {
-              name: file.name,
-              size: file.size,
-              type: file.type,
-              content: base64Content,
-            };
-          })
+          filesToSend.map(
+            (file) =>
+              new Promise<any>((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const result = reader.result as string;
+                  const base64 = result.split(",")[1] || result;
+                  resolve({
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    content: base64,
+                  });
+                };
+                reader.readAsDataURL(file);
+              })
+          )
         );
 
         const payload = {
@@ -974,7 +1026,6 @@ export default function ChatInterface() {
 
         const savedMessage = await res.json();
 
-        // Update the temporary message with the real one
         setAllMessages((prev) => {
           const updatedMessages = [...(prev[selectedChat] || [])];
           const tempIndex = updatedMessages.findIndex((m) => m.id === tempId);
@@ -1003,7 +1054,6 @@ export default function ChatInterface() {
     } catch (err) {
       console.error("Send message error:", err);
 
-      // Remove temporary message on error
       setAllMessages((prev) => ({
         ...prev,
         [selectedChat]: (prev[selectedChat] || []).filter(
