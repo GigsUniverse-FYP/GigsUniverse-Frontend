@@ -1,146 +1,525 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Search, Filter, MapPin, Clock, DollarSign, Heart, ChevronDown, X } from "lucide-react"
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
+import {
+  Search,
+  Filter,
+  MapPin,
+  Clock,
+  DollarSign,
+  Heart,
+  ChevronDown,
+  X,
+  Eye,
+  Send,
+  Star,
+  Calendar,
+  Users,
+  GraduationCap,
+  Briefcase,
+  Languages,
+} from "lucide-react";
 
-const jobs = [
-  {
-    id: 1,
-    title: "Senior React Developer",
-    company: "TechCorp Inc.",
-    location: "Remote",
-    type: "Full-time",
-    salary: "$80,000 - $120,000",
-    posted: "2 days ago",
-    description:
-      "We're looking for an experienced React developer to join our growing team and help build scalable web applications...",
-    skills: ["React", "TypeScript", "Node.js", "GraphQL"],
-    saved: false,
-    experience: "Senior",
-    salaryRange: 100000,
-  },
-  {
-    id: 2,
-    title: "UI/UX Designer",
-    company: "Creative Studio",
-    location: "New York, NY",
-    type: "Contract",
-    salary: "$60 - $80/hour",
-    posted: "1 day ago",
-    description:
-      "Join our creative team to design beautiful and intuitive user experiences for modern web applications...",
-    skills: ["Figma", "Adobe Creative Suite", "Prototyping", "User Research"],
-    saved: true,
-    experience: "Mid-level",
-    salaryRange: 70000,
-  },
-  {
-    id: 3,
-    title: "Full Stack Developer",
-    company: "StartupXYZ",
-    location: "San Francisco, CA",
-    type: "Full-time",
-    salary: "$90,000 - $130,000",
-    posted: "3 days ago",
-    description:
-      "Help us build the next generation of web applications using modern technologies and best practices...",
-    skills: ["JavaScript", "Python", "AWS", "Docker"],
-    saved: false,
-    experience: "Senior",
-    salaryRange: 110000,
-  },
-  {
-    id: 4,
-    title: "Mobile App Developer",
-    company: "AppTech Solutions",
-    location: "Remote",
-    type: "Part-time",
-    salary: "$50 - $70/hour",
-    posted: "1 week ago",
-    description:
-      "Develop cross-platform mobile applications using React Native and modern mobile development practices...",
-    skills: ["React Native", "iOS", "Android", "Firebase"],
-    saved: false,
-    experience: "Mid-level",
-    salaryRange: 60000,
-  },
-]
+import { jobField, languages } from "@/lib/data";
+import { toast } from "react-toastify";
+import { useSearchParams } from "next/navigation";
+
+export interface Job {
+  id: number;
+  jobTitle: string;
+  companyName: string;
+  jobLocation: string[];
+  jobCategory: string[];
+  jobField: string;
+  preferredPayrate: string;
+  yearsOfJobExperience: string;
+  jobExperience: string;
+  hoursContributionPerWeek: number;
+  highestEducationLevel: string[];
+  jobStatus: string;
+  isPremiumJob: boolean;
+  languageProficiency: string[];
+  duration: string;
+  jobLocationHiringRequired: boolean;
+  createdAt: string;
+  jobExpirationDate: string;
+  jobDescription: string;
+  jobScope: string;
+  skillTags: string[];
+  employerId: string;
+  saved: boolean;
+}
+interface ApiJob {
+  jobPostId: number;
+  jobTitle: string;
+  companyName: string;
+  jobLocation: string[] | string;
+  jobCategory: string[] | string;
+  jobField: string;
+  preferredPayrate: string;
+  yearsOfJobExperience: string;
+  jobExperience: string;
+  hoursContributionPerWeek: number;
+  highestEducationLevel: string[] | string;
+  jobStatus: string;
+  isPremiumJob: boolean;
+  languageProficiency: string[] | string;
+  duration: string;
+  jobLocationHiringRequired: boolean;
+  createdAt: string;
+  jobExpirationDate: string;
+  jobDescription: string;
+  jobScope: string;
+  skillTags: string[] | string;
+  employerId: string;
+  saved: boolean;
+}
 
 export default function JobSearchPage() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [locationFilter, setLocationFilter] = useState("")
-  const [jobType, setJobType] = useState("all")
-  const [savedJobs, setSavedJobs] = useState<number[]>([2])
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
-  const [experienceLevel, setExperienceLevel] = useState<string[]>([])
-  const [salaryRange, setSalaryRange] = useState("all")
-  const [remoteOnly, setRemoteOnly] = useState(false)
-  const [sortBy, setSortBy] = useState("recent")
+  const [searchQuery, setSearchQuery] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
+  const [jobType, setJobType] = useState("all");
+  const [savedJobs, setSavedJobs] = useState<number[]>([]);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<(typeof jobs)[0] | null>(null);
+  const [showApplyDialog, setShowApplyDialog] = useState(false);
+  const [applicationData, setApplicationData] = useState({
+    ratePerHour: "",
+    proposal: "",
+  });
 
-  const toggleSaveJob = (jobId: number) => {
-    setSavedJobs((prev) => (prev.includes(jobId) ? prev.filter((id) => id !== jobId) : [...prev, jobId]))
-  }
+  const searchParams = useSearchParams()
+  const jobIdFromQuery = searchParams.get("id")
 
-  const toggleExperienceLevel = (level: string) => {
-    setExperienceLevel((prev) => (prev.includes(level) ? prev.filter((l) => l !== level) : [...prev, level]))
-  }
+  useEffect(() => {
+    if (jobIdFromQuery) {
+      setSearchQuery(jobIdFromQuery)
+    }
+  }, [jobIdFromQuery])
+
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+  const [isPremium, setIsPremium] = useState(false);
+
+  useEffect(() => {
+    const fetchPremiumStatus = async () => {
+      try {
+        const res = await fetch(
+          `${backendUrl}/api/freelancer/subscription/premium-status`,
+          {
+            method: "GET",
+            credentials: "include",
+          }
+        );
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch premium status");
+        }
+
+        const data: boolean = await res.json();
+        setIsPremium(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchPremiumStatus();
+  }, []);
+
+  const [jobs, setJobs] = useState<Job[]>([]);
+
+
+  const toggleSaveJob = async (jobId: number) => {
+    const isSaved = savedJobs.includes(jobId);
+    try {
+      if (!isSaved) {
+        await fetch(`${backendUrl}/api/favourites/toggle`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jobId }),
+        });
+
+        setSavedJobs([...savedJobs, jobId]);
+        setJobs(
+          jobs.map((job) => (job.id === jobId ? { ...job, saved: true } : job))
+        );
+      } else {
+        await fetch(`${backendUrl}/api/favourites/toggle`, {
+          method: "DELETE",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jobId }),
+        });
+
+        setSavedJobs(savedJobs.filter((id) => id !== jobId));
+        setJobs(
+          jobs.map((job) => (job.id === jobId ? { ...job, saved: false } : job))
+        );
+      }
+    } catch (error) {
+      console.error("Error toggling favourite job:", error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const res = await fetch(
+          `${backendUrl}/api/job-posts/freelancer/job-search`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (!res.ok) throw new Error("Failed to fetch jobs");
+        const data: ApiJob[] = await res.json();
+
+        const formattedJobs: Job[] = data.map((job) => ({
+          id: job.jobPostId, // Map API jobPostId to Job.id
+          jobTitle: job.jobTitle,
+          companyName: job.companyName,
+          jobLocation:
+            typeof job.jobLocation === "string"
+              ? (job.jobLocation as string)
+                  .split(",")
+                  .map((loc: string) => loc.trim())
+              : job.jobLocation,
+          jobCategory:
+            typeof job.jobCategory === "string"
+              ? (job.jobCategory as string)
+                  .split(",")
+                  .map((cat: string) => cat.trim())
+              : job.jobCategory,
+          jobField: job.jobField,
+          preferredPayrate: job.preferredPayrate,
+          yearsOfJobExperience: job.yearsOfJobExperience,
+          jobExperience: job.jobExperience,
+          hoursContributionPerWeek: job.hoursContributionPerWeek,
+          highestEducationLevel:
+            typeof job.highestEducationLevel === "string"
+              ? (job.highestEducationLevel as string)
+                  .split(",")
+                  .map((edu: string) => edu.trim())
+              : job.highestEducationLevel,
+          jobStatus: job.jobStatus,
+          isPremiumJob: job.isPremiumJob,
+          languageProficiency:
+            typeof job.languageProficiency === "string"
+              ? (job.languageProficiency as string)
+                  .split(",")
+                  .map((lang: string) => lang.trim())
+              : job.languageProficiency,
+          duration: job.duration,
+          jobLocationHiringRequired: job.jobLocationHiringRequired,
+          createdAt: job.createdAt,
+          jobExpirationDate: job.jobExpirationDate,
+          jobDescription: job.jobDescription,
+          jobScope: job.jobScope,
+          skillTags:
+            typeof job.skillTags === "string"
+              ? (job.skillTags as string)
+                  .split(",")
+                  .map((tag: string) => tag.trim())
+              : job.skillTags,
+          employerId: job.employerId,
+          saved: job.saved,
+        }));
+        setJobs(formattedJobs);
+        setSavedJobs(
+          formattedJobs.filter((job) => job.saved).map((job) => job.id)
+        );
+        console.log(formattedJobs);
+      } catch (err: any) {
+        console.error("Error Occurred While Fetching Jobs:", err);
+      }
+    };
+
+    fetchJobs();
+  }, []);
+
+  const [filters, setFilters] = useState({
+    jobField: "all",
+    jobExperience: [] as string[],
+    yearsOfExperience: "all",
+    educationLevel: [] as string[],
+    languageProficiency: "all",
+    hoursPerWeek: [0, 50] as [number, number],
+    payRate: [0, 200] as [number, number],
+    premiumOnly: false,
+    nonPremiumOnly: false,
+    jobStatus: "all",
+    duration: "all",
+    favouriteJob: false,
+  });
+
+  const toggleArrayFilter = (
+    filterKey: keyof typeof filters,
+    value: string
+  ) => {
+    setFilters((prev) => ({
+      ...prev,
+      [filterKey]: Array.isArray(prev[filterKey])
+        ? (prev[filterKey] as string[]).includes(value)
+          ? (prev[filterKey] as string[]).filter((item) => item !== value)
+          : [...(prev[filterKey] as string[]), value]
+        : [value],
+    }));
+  };
 
   const clearFilters = () => {
-    setSearchQuery("")
-    setLocationFilter("")
-    setJobType("all")
-    setExperienceLevel([])
-    setSalaryRange("all")
-    setRemoteOnly(false)
-  }
+    setSearchQuery("");
+    setLocationFilter("");
+    setJobType("all");
+    setFilters({
+      jobField: "all",
+      jobExperience: [],
+      yearsOfExperience: "all",
+      educationLevel: [],
+      languageProficiency: "all",
+      hoursPerWeek: [0, 50],
+      payRate: [0, 200],
+      premiumOnly: false,
+      nonPremiumOnly: false,
+      jobStatus: "all",
+      duration: "all",
+      favouriteJob: false,
+    });
+  };
 
   const filteredJobs = jobs.filter((job) => {
     const matchesSearch =
-      job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.skills.some((skill) => skill.toLowerCase().includes(searchQuery.toLowerCase()))
+      job.id.toString().includes(searchQuery) ||
+      job.jobTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.jobDescription.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.jobScope.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.skillTags.includes(searchQuery.toLowerCase());
 
-    const matchesLocation = !locationFilter || job.location.toLowerCase().includes(locationFilter.toLowerCase())
-    const matchesType = jobType === "all" || job.type === jobType
-    const matchesExperience = experienceLevel.length === 0 || experienceLevel.includes(job.experience)
-    const matchesSalary =
-      salaryRange === "all" ||
-      (salaryRange === "50k" && job.salaryRange >= 50000) ||
-      (salaryRange === "80k" && job.salaryRange >= 80000) ||
-      (salaryRange === "100k" && job.salaryRange >= 100000)
-    const matchesRemote = !remoteOnly || job.location === "Remote"
+    const matchesLocation =
+      !locationFilter ||
+      job.jobLocation.some((loc) =>
+        loc.toLowerCase().includes(locationFilter.toLowerCase())
+      );
 
-    return matchesSearch && matchesLocation && matchesType && matchesExperience && matchesSalary && matchesRemote
-  })
+    const matchesType = jobType === "all" || job.jobCategory.includes(jobType); // Updated to check array
+    const matchesField =
+      filters.jobField === "all" || job.jobField === filters.jobField;
+    const matchesExperience =
+      filters.jobExperience.length === 0 ||
+      filters.jobExperience.includes(job.jobExperience);
+    const matchesYearsExp =
+      filters.yearsOfExperience === "all" ||
+      job.yearsOfJobExperience === filters.yearsOfExperience;
+    const matchesEducation =
+      filters.educationLevel.length === 0 ||
+      filters.educationLevel.some((level) =>
+        job.highestEducationLevel.includes(level)
+      );
+    const matchesLanguage =
+      filters.languageProficiency === "all" ||
+      job.languageProficiency
+        .map((lang: string) => lang.toLowerCase())
+        .includes(filters.languageProficiency.toLowerCase());
+    const matchesHours =
+      job.hoursContributionPerWeek >= filters.hoursPerWeek[0] &&
+      job.hoursContributionPerWeek <= filters.hoursPerWeek[1];
+    const [minPay, maxPay] = job.preferredPayrate.split("-").map(Number);
+    const matchesPayRate =
+      maxPay >= filters.payRate[0] && minPay <= filters.payRate[1];
+    const matchesPremium = !filters.premiumOnly || job.isPremiumJob;
+    const matchesNonPremium = !filters.nonPremiumOnly || !job.isPremiumJob;
+    const matchesStatus =
+      filters.jobStatus === "all" || job.jobStatus === filters.jobStatus;
+    const matchesFavourite = !filters.favouriteJob || job.saved;
+
+    return (
+      matchesSearch &&
+      matchesLocation &&
+      matchesType &&
+      matchesField &&
+      matchesExperience &&
+      matchesYearsExp &&
+      matchesEducation &&
+      matchesLanguage &&
+      matchesHours &&
+      matchesPayRate &&
+      matchesPremium &&
+      matchesNonPremium &&
+      matchesStatus &&
+      matchesFavourite
+    );
+  });
+
+  const handleApplyJob = async (job: (typeof jobs)[0]) => {
+    try {
+      const res = await fetch(`${backendUrl}/api/job-applications/check?jobId=${job.id}`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to check application status");
+      }
+
+      const data: { applied: boolean } = await res.json();
+
+      if (data.applied) {
+        toast.error("You have already applied to this job");
+        return;
+      }
+
+      setSelectedJob(job);
+      setShowApplyDialog(true);
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong. Please try again.");
+    }
+  };
+
+  const submitApplication = async () => {
+    if (!selectedJob) return;
+
+    try {
+      const res = await fetch(`${backendUrl}/api/job-applications/apply`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          jobId: selectedJob.id,
+          ratePerHour: applicationData.ratePerHour,
+          proposal: applicationData.proposal,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorMessage = await res.text();
+        
+        if (errorMessage.includes("full")) {
+          toast.error("Sorry, this job is already full.");
+        } else {
+          toast.error(errorMessage || "Failed to apply for job");
+        }
+        return;
+      }
+
+      const data = await res.json();
+      toast.success("Job Application Submitted !");
+      setShowApplyDialog(false);
+      setApplicationData({ ratePerHour: "", proposal: "" });
+
+    } catch (err) {
+      console.error("Error applying for job:", err);
+      toast.error("Something went wrong. Please try again.");
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      Active: { color: "bg-green-100 text-green-800 border-green-200" },
+      Expired: { color: "bg-red-100 text-red-800 border-red-200" },
+      Full: { color: "bg-orange-100 text-orange-800 border-orange-200" },
+    };
+    const config =
+      statusConfig[status as keyof typeof statusConfig] || statusConfig.Active;
+    return (
+      <Badge className={`${config.color} border font-medium`}>{status}</Badge>
+    );
+  };
 
   const activeFiltersCount = [
     searchQuery,
     locationFilter,
     jobType !== "all",
-    experienceLevel.length > 0,
-    salaryRange !== "all",
-    remoteOnly,
-  ].filter(Boolean).length
+    filters.jobField !== "all",
+    filters.jobExperience.length > 0,
+    filters.yearsOfExperience !== "all",
+    filters.educationLevel.length > 0,
+    filters.languageProficiency !== "all",
+    filters.hoursPerWeek[0] > 0 || filters.hoursPerWeek[1] < 50,
+    filters.payRate[0] > 0 || filters.payRate[1] < 200,
+    filters.premiumOnly,
+    filters.nonPremiumOnly,
+    filters.jobStatus !== "all",
+    filters.duration !== "all",
+    filters.favouriteJob,
+  ].filter(Boolean).length;
+
+  const [visibleCount, setVisibleCount] = useState(3);
+
+  const visibleJobs = filteredJobs.slice(0, visibleCount);
+
+  // lazy loading
+  useEffect(() => {
+    const handleScroll = () => {
+      if (
+        window.innerHeight + window.scrollY >=
+          document.body.offsetHeight - 500 &&
+        visibleCount < filteredJobs.length
+      ) {
+        setVisibleCount((prev) => prev + 10);
+        console.log("Loaded more jobs");
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [visibleCount, filteredJobs.length]);
 
   return (
-    <div className="w-full sm:max-w-8xl mx-auto space-y-6 mb-5 -ml-10 sm:ml-0">
+    <div className="w-full max-w-7xl mx-auto space-y-6 mb-5 px-4 sm:px-0">
       {/* Job Search Header */}
       <div className="text-center sm:text-left">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-4 mb-4">Job Search</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-4 mb-4">
+          Job Search
+        </h1>
       </div>
 
       {/* Search and Filters */}
       <Card className="border border-gray-200 shadow-md bg-white rounded-xl">
         <CardHeader className="pb-4">
-          <CardTitle className="text-xl font-bold text-gray-900">Find Your Next Opportunity</CardTitle>
+          <CardTitle className="text-xl font-bold text-gray-900">
+            Find Your Next Opportunity
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -168,16 +547,18 @@ export default function JobSearchPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="Full-time">Full-time</SelectItem>
-                <SelectItem value="Part-time">Part-time</SelectItem>
-                <SelectItem value="Contract">Contract</SelectItem>
+                <SelectItem value="Part Time">Part Time</SelectItem>
                 <SelectItem value="Freelance">Freelance</SelectItem>
+                <SelectItem value="Gig Internship">Gig Internship</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Collapsible open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
+            <Collapsible
+              open={showAdvancedFilters}
+              onOpenChange={setShowAdvancedFilters}
+            >
               <CollapsibleTrigger asChild>
                 <Button
                   variant="outline"
@@ -196,20 +577,212 @@ export default function JobSearchPage() {
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-4">
                 <Card className="border border-gray-200 bg-gray-50 rounded-lg">
-                  <CardContent className="p-4 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <CardContent className="p-4 space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {/* Job Field */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                          <Briefcase className="h-4 w-4" />
+                          Job Field
+                        </Label>
+                        <Select
+                          value={filters.jobField}
+                          onValueChange={(value) =>
+                            setFilters((prev) => ({ ...prev, jobField: value }))
+                          }
+                        >
+                          <SelectTrigger className="border border-gray-200 h-9 rounded-lg">
+                            <SelectValue placeholder="Select field" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Fields</SelectItem>
+                            {jobField.map((field) => (
+                              <SelectItem key={field} value={field}>
+                                {field}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Years of Experience */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          Years of Experience
+                        </Label>
+                        <Select
+                          value={filters.yearsOfExperience}
+                          onValueChange={(value) =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              yearsOfExperience: value,
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="border border-gray-200 h-9 rounded-lg">
+                            <SelectValue placeholder="Select years" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Any Experience</SelectItem>
+                            <SelectItem value="0-1">0-1 years</SelectItem>
+                            <SelectItem value="2-4">2-4 years</SelectItem>
+                            <SelectItem value="3-5">3-5 years</SelectItem>
+                            <SelectItem value="5-8">5-8 years</SelectItem>
+                            <SelectItem value="5-10">5-10 years</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Language */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                          <Languages className="h-4 w-4" />
+                          Language
+                        </Label>
+                        <Select
+                          value={filters.languageProficiency}
+                          onValueChange={(value) =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              languageProficiency: value,
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="border border-gray-200 h-9 rounded-lg">
+                            <SelectValue placeholder="Select language" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Any Language</SelectItem>
+                            {languages.map((lang) => (
+                              <SelectItem key={lang} value={lang.toLowerCase()}>
+                                {lang}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Job Status */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          Job Status
+                        </Label>
+                        <Select
+                          value={filters.jobStatus}
+                          onValueChange={(value) =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              jobStatus: value,
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="border border-gray-200 h-9 rounded-lg">
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Status</SelectItem>
+                            <SelectItem value="Active">Active</SelectItem>
+                            <SelectItem value="Expired">Expired</SelectItem>
+                            <SelectItem value="Full">Full</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-4 border-t border-gray-200">
                       {/* Experience Level */}
                       <div className="space-y-3">
-                        <Label className="text-sm font-semibold text-gray-900">Experience Level</Label>
+                        <Label className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                          <GraduationCap className="h-4 w-4" />
+                          Experience Level
+                        </Label>
                         <div className="space-y-2">
-                          {["Entry-level", "Mid-level", "Senior"].map((level) => (
-                            <div key={level} className="flex items-center space-x-2">
+                          {["Entry Level", "Mid Level", "Senior Level"].map(
+                            (level) => (
+                              <div
+                                key={level}
+                                className="flex items-center space-x-2"
+                              >
+                                <Checkbox
+                                  id={level}
+                                  checked={filters.jobExperience.includes(
+                                    level
+                                  )}
+                                  onCheckedChange={() =>
+                                    toggleArrayFilter("jobExperience", level)
+                                  }
+                                />
+                                <Label
+                                  htmlFor={level}
+                                  className="text-sm text-gray-700"
+                                >
+                                  {level}
+                                </Label>
+                              </div>
+                            )
+                          )}
+                        </div>
+                        <br></br>
+                        <Label className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                          <Heart className="h-4 w-4" />
+                          Favourite Job Only
+                        </Label>
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="favouriteJob"
+                              checked={filters.favouriteJob}
+                              onCheckedChange={() =>
+                                setFilters((prev) => ({
+                                  ...prev,
+                                  favouriteJob: !prev.favouriteJob,
+                                }))
+                              }
+                            />
+                            <Label
+                              htmlFor="favouriteJob"
+                              className="text-sm text-gray-700"
+                            >
+                              Favourite Jobs
+                            </Label>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Education Level */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                          <GraduationCap className="h-4 w-4" />
+                          Education Level
+                        </Label>
+                        <div className="space-y-2">
+                          {[
+                            "High School",
+                            "Certificate",
+                            "Diploma",
+                            "Associate Degree",
+                            "Bachelor's Degree",
+                            "Master's Degree",
+                            "Doctorate (PhD)",
+                            "Professional Certification",
+                          ].map((level) => (
+                            <div
+                              key={level}
+                              className="flex items-center space-x-2"
+                            >
                               <Checkbox
                                 id={level}
-                                checked={experienceLevel.includes(level)}
-                                onCheckedChange={() => toggleExperienceLevel(level)}
+                                checked={filters.educationLevel.includes(level)}
+                                onCheckedChange={() =>
+                                  toggleArrayFilter("educationLevel", level)
+                                }
                               />
-                              <Label htmlFor={level} className="text-sm text-gray-700">
+                              <Label
+                                htmlFor={level}
+                                className="text-sm text-gray-700"
+                              >
                                 {level}
                               </Label>
                             </div>
@@ -217,41 +790,104 @@ export default function JobSearchPage() {
                         </div>
                       </div>
 
-                      {/* Salary Range */}
+                      {/* Premium Jobs Toggle */}
                       <div className="space-y-3">
-                        <Label className="text-sm font-semibold text-gray-900">Minimum Salary</Label>
-                        <Select value={salaryRange} onValueChange={setSalaryRange}>
-                          <SelectTrigger className="border border-gray-200 h-9 rounded-lg">
-                            <SelectValue placeholder="Select range" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Any Salary</SelectItem>
-                            <SelectItem value="50k">$50,000+</SelectItem>
-                            <SelectItem value="80k">$80,000+</SelectItem>
-                            <SelectItem value="100k">$100,000+</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Additional Filters */}
-                      <div className="space-y-3">
-                        <Label className="text-sm font-semibold text-gray-900">Additional Options</Label>
-                        <div className="space-y-2">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id="remote"
-                              checked={remoteOnly}
-                              onCheckedChange={(checked) => setRemoteOnly(checked === true)}
-                            />
-                            <Label htmlFor="remote" className="text-sm text-gray-700">
-                              Remote Only
-                            </Label>
-                          </div>
+                        <Label className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                          <Star className="h-4 w-4" />
+                          Premium Options
+                        </Label>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="premium"
+                            checked={filters.premiumOnly}
+                            onCheckedChange={(checked) =>
+                              setFilters((prev) => ({
+                                ...prev,
+                                premiumOnly: checked === true,
+                                nonPremiumOnly:
+                                  checked === true
+                                    ? false
+                                    : prev.nonPremiumOnly,
+                              }))
+                            }
+                          />
+                          <Label
+                            htmlFor="premium"
+                            className="text-sm text-gray-700 flex items-center gap-2"
+                          >
+                            Premium Jobs Only
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="non-premium"
+                            checked={filters.nonPremiumOnly}
+                            onCheckedChange={(checked) =>
+                              setFilters((prev) => ({
+                                ...prev,
+                                nonPremiumOnly: checked === true,
+                                premiumOnly:
+                                  checked === true ? false : prev.premiumOnly,
+                              }))
+                            }
+                          />
+                          <Label
+                            htmlFor="non-premium"
+                            className="text-sm text-gray-700 flex items-center gap-2"
+                          >
+                            No Premium Jobs
+                          </Label>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-200">
+                      {/* Hours per Week */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          Hours per Week: {filters.hoursPerWeek[0]} -{" "}
+                          {filters.hoursPerWeek[1]}
+                        </Label>
+                        <Slider
+                          value={filters.hoursPerWeek}
+                          onValueChange={(value) =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              hoursPerWeek: value as [number, number],
+                            }))
+                          }
+                          max={50}
+                          min={0}
+                          step={5}
+                          className="w-full"
+                        />
+                      </div>
+
+                      {/* Pay Rate */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                          <DollarSign className="h-4 w-4" />
+                          Pay Rate ($/hour): {filters.payRate[0]} -{" "}
+                          {filters.payRate[1]}
+                        </Label>
+                        <Slider
+                          value={filters.payRate}
+                          onValueChange={(value) =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              payRate: value as [number, number],
+                            }))
+                          }
+                          max={200}
+                          min={0}
+                          step={10}
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
                       <Button
                         variant="outline"
                         size="sm"
@@ -273,27 +909,6 @@ export default function JobSearchPage() {
                 </Card>
               </CollapsibleContent>
             </Collapsible>
-
-            <Button
-              variant="outline"
-              size="sm"
-              className={`border border-gray-200 h-9 rounded-lg ${
-                remoteOnly ? "bg-black text-white" : "bg-white hover:bg-gray-50"
-              }`}
-              onClick={() => setRemoteOnly(!remoteOnly)}
-            >
-              Remote Only
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className={`border border-gray-200 h-9 rounded-lg ${
-                salaryRange === "80k" ? "bg-black text-white" : "bg-white hover:bg-gray-50"
-              }`}
-              onClick={() => setSalaryRange(salaryRange === "80k" ? "all" : "80k")}
-            >
-              $80k+
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -301,25 +916,18 @@ export default function JobSearchPage() {
       {/* Results Summary */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <p className="text-gray-600">
-          Showing <span className="font-semibold text-gray-900">{filteredJobs.length}</span> jobs
+          Showing{" "}
+          <span className="font-semibold text-gray-900">
+            {filteredJobs.length}
+          </span>{" "}
+          jobs
         </p>
-        <Select value={sortBy} onValueChange={setSortBy}>
-          <SelectTrigger className="w-full sm:w-48 border border-gray-200 h-10 rounded-lg">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="recent">Most Recent</SelectItem>
-            <SelectItem value="relevant">Most Relevant</SelectItem>
-            <SelectItem value="salary-high">Salary: High to Low</SelectItem>
-            <SelectItem value="salary-low">Salary: Low to High</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Job Listings */}
       <div className="space-y-4">
-        {filteredJobs.length > 0 ? (
-          filteredJobs.map((job) => (
+        {visibleJobs.length > 0 ? (
+          visibleJobs.map((job) => (
             <Card
               key={job.id}
               className="border border-gray-200 shadow-md bg-white hover:shadow-lg transition-all duration-200 rounded-xl"
@@ -328,9 +936,22 @@ export default function JobSearchPage() {
                 <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">{job.title}</h3>
-                        <p className="text-gray-600 font-semibold text-lg">{job.company}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-xl font-bold text-gray-900">
+                            {job.jobTitle}
+                          </h3>
+                          {job.isPremiumJob && (
+                            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 flex items-center gap-1">
+                              <Star className="h-3 w-3" />
+                              Premium
+                            </Badge>
+                          )}
+                          {getStatusBadge(job.jobStatus)}
+                        </div>
+                        <p className="text-gray-600 font-semibold text-lg">
+                          {job.companyName}
+                        </p>
                       </div>
                       <Button
                         variant="ghost"
@@ -339,114 +960,526 @@ export default function JobSearchPage() {
                         className="p-2 hover:bg-gray-100 rounded-lg"
                       >
                         <Heart
-                          className={`h-5 w-5 ${savedJobs.includes(job.id) ? "fill-black text-black" : "text-gray-400"}`}
+                          className={`h-5 w-5 ${
+                            savedJobs.includes(job.id)
+                              ? "fill-black text-black"
+                              : "text-gray-400"
+                          }`}
                         />
                       </Button>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-4 mb-4 text-sm text-gray-600">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm text-gray-600">
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
-                        <span className="font-medium">{job.location}</span>
+                        <span className="font-medium truncate w-60">
+                          {job.jobLocation.length === 1
+                            ? job.jobLocation[0].toLowerCase() === "global"
+                              ? "Global"
+                              : job.jobLocation[0]
+                            : job.jobLocation.join(", ")}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4" />
-                        <span className="font-medium">{job.type}</span>
+                        <div className="flex flex-wrap gap-1">
+                          {job.jobCategory
+                            .slice(0, 2)
+                            .map((category, index) => (
+                              <Badge
+                                key={index}
+                                variant="secondary"
+                                className="text-xs px-2 py-0.5"
+                              >
+                                {category}
+                              </Badge>
+                            ))}
+                          {job.jobCategory.length > 2 && (
+                            <Badge
+                              variant="secondary"
+                              className="text-xs px-2 py-0.5"
+                            >
+                              +{job.jobCategory.length - 2}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4" />
-                        <span className="font-medium">{job.salary}</span>
+                        <span className="font-medium">
+                          {job.preferredPayrate}/hr
+                        </span>
                       </div>
-                      <span className="text-gray-500">Posted {job.posted}</span>
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        <span className="font-medium">
+                          {job.hoursContributionPerWeek}h/week
+                        </span>
+                      </div>
                     </div>
 
-                    <p className="text-gray-700 mb-4 leading-relaxed">{job.description}</p>
+                    {job.jobLocationHiringRequired && (
+                      <div className="mb-4">
+                        <Badge className="bg-blue-100 text-blue-800 border-blue-200 flex items-center gap-1 w-fit">
+                          <MapPin className="h-3 w-3" />
+                          Location-specific hiring
+                        </Badge>
+                      </div>
+                    )}
+
+                    <p className="text-gray-700 mb-4 leading-relaxed line-clamp-2">
+                      {job.jobDescription}
+                    </p>
 
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {job.skills.map((skill, index) => (
+                      {job.skillTags.slice(0, 4).map((skill, index) => (
                         <Badge
                           key={index}
                           className="bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200 px-3 py-1 rounded-lg"
                         >
-                          {skill}
+                          {skill.trim()}
                         </Badge>
                       ))}
+                      {job.skillTags.length > 4 && (
+                        <Badge className="bg-gray-100 text-gray-700 border border-gray-200 px-3 py-1 rounded-lg">
+                          +{job.skillTags.length - 4} more
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="text-sm text-gray-500">
+                      <span className="mr-1">
+                        Required Job Experience: {job.yearsOfJobExperience}{" "}
+                        years
+                      </span>
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-3 lg:ml-6 lg:min-w-[140px]">
-                    <Button className="bg-black hover:bg-gray-800 text-white h-11 rounded-lg font-semibold">
-                      Apply Now
-                    </Button>
                     <Button
-                      variant="outline"
-                      className="border border-gray-200 bg-white hover:bg-gray-50 h-11 rounded-lg font-semibold"
+                      className={`h-11 rounded-lg font-semibold ${
+                        job.jobStatus !== "Active" ||
+                        (job.isPremiumJob && !isPremium)
+                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-black hover:bg-gray-800 text-white"
+                      }`}
+                      disabled={
+                        job.jobStatus !== "Active" ||
+                        (job.isPremiumJob && !isPremium)
+                      }
+                      onClick={() => handleApplyJob(job)}
                     >
-                      View Details
+                      {job.jobStatus !== "Active"
+                        ? job.jobStatus === "Expired"
+                          ? "Expired"
+                          : "Position Full"
+                        : job.isPremiumJob && !isPremium
+                        ? "Premium Only"
+                        : "Apply Now"}
                     </Button>
+
+                    <Sheet>
+                      <SheetTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="border border-gray-200 bg-white hover:bg-gray-50 h-11 rounded-lg font-semibold"
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Details
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent className="sm:max-w-2xl overflow-y-auto overflow-x-hidden bg-white">
+                        {" "}
+                        {/* drawer section */}
+                        <SheetHeader className="border-b border-gray-200 pb-6">
+                          <SheetTitle className="text-left">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-3">
+                                  <h2 className="text-2xl font-bold text-gray-900">
+                                    {job.jobTitle}
+                                  </h2>
+                                  {job.isPremiumJob && (
+                                    <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 flex items-center gap-1">
+                                      <Star className="h-3 w-3" />
+                                      Premium
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-lg text-gray-600 font-medium mb-3">
+                                  {job.companyName}
+                                </p>
+                                <div className="flex items-center gap-2">
+                                  {getStatusBadge(job.jobStatus)}
+                                  {job.jobLocationHiringRequired && (
+                                    <Badge className="bg-blue-100 text-blue-800 border-blue-200 flex items-center gap-1">
+                                      <MapPin className="h-3 w-3" />
+                                      Location-specific
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </SheetTitle>
+                        </SheetHeader>
+                        <div className="mt-6 space-y-8">
+                          {" "}
+                          {/* Status Alert */}
+                          {job.jobStatus !== "Active" && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                              <p className="text-sm text-red-800 font-medium">
+                                ⚠️ This job is no longer accepting applications.
+                              </p>
+                            </div>
+                          )}
+                          <Card className="border border-gray-200 ml-2">
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                <Briefcase className="h-5 w-5" />
+                                Job Overview
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div className="space-y-1">
+                                  <Label className="font-medium text-gray-500">
+                                    Location
+                                  </Label>
+                                  <p className="text-gray-900 font-medium">
+                                    {job.jobLocation.length === 1
+                                      ? job.jobLocation[0].toLowerCase() ===
+                                        "global"
+                                        ? "Global"
+                                        : job.jobLocation[0]
+                                      : job.jobLocation.join(", ")}
+                                  </p>
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="font-medium text-gray-500">
+                                    Job Types
+                                  </Label>
+                                  <div className="flex flex-wrap gap-1">
+                                    {job.jobCategory.map((category, index) => (
+                                      <Badge
+                                        key={index}
+                                        variant="secondary"
+                                        className="text-xs"
+                                      >
+                                        {category}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="font-medium text-gray-500">
+                                    Field
+                                  </Label>
+                                  <p className="text-gray-900 font-medium">
+                                    {job.jobField}
+                                  </p>
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="font-medium text-gray-500">
+                                    Experience Level
+                                  </Label>
+                                  <p className="text-gray-900 font-medium">
+                                    {job.jobExperience}
+                                  </p>
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="font-medium text-gray-500">
+                                    Pay Rate
+                                  </Label>
+                                  <p className="text-gray-900 font-medium">
+                                    ${job.preferredPayrate}/hour
+                                  </p>
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="font-medium text-gray-500">
+                                    Hours/Week
+                                  </Label>
+                                  <p className="text-gray-900 font-medium">
+                                    {job.hoursContributionPerWeek} hours
+                                  </p>
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="font-medium text-gray-500">
+                                    Duration
+                                  </Label>
+                                  <p className="text-gray-900 font-medium">
+                                    {job.duration}
+                                  </p>
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="font-medium text-gray-500">
+                                    Languages
+                                  </Label>
+                                  <p className="text-gray-900 font-medium">
+                                    {job.languageProficiency.length === 1
+                                      ? job.languageProficiency[0]
+                                      : job.languageProficiency.join(", ")}
+                                  </p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                          <Card className="border border-gray-200 ml-2">
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                <GraduationCap className="h-5 w-5" />
+                                Requirements
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              <div>
+                                <Label className="font-medium text-gray-500 mb-2 block">
+                                  Education Requirements
+                                </Label>
+                                <div className="flex flex-wrap gap-2">
+                                  {job.highestEducationLevel.map(
+                                    (edu, index) => (
+                                      <Badge
+                                        key={index}
+                                        className="bg-blue-100 text-blue-800 border-blue-200"
+                                      >
+                                        {edu.trim()}
+                                      </Badge>
+                                    )
+                                  )}
+                                </div>
+                              </div>
+
+                              <div>
+                                <Label className="font-medium text-gray-500 mb-2 block">
+                                  Required Skills
+                                </Label>
+                                <div className="flex flex-wrap gap-2">
+                                  {job.skillTags.map((skill, index) => (
+                                    <Badge
+                                      key={index}
+                                      className="bg-gray-100 text-gray-700 border border-gray-200"
+                                    >
+                                      {skill.trim()}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                              <div>
+                                <Label className="font-medium text-gray-500 mb-2 block">
+                                  Required Years of Experience
+                                </Label>
+                                <div className="flex flex-wrap gap-2">
+                                  <Badge className="bg-gray-100 text-gray-700 border border-gray-200">
+                                    {job.yearsOfJobExperience} years
+                                  </Badge>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                          <Card className="border border-gray-200 ml-2">
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                <Eye className="h-5 w-5" />
+                                Job Description
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <p className="text-gray-700 leading-relaxed">
+                                {job.jobDescription}
+                              </p>
+                            </CardContent>
+                          </Card>
+                          <Card className="border border-gray-200 ml-2">
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                <Users className="h-5 w-5" />
+                                Job Scopes
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <p className="text-gray-700 leading-relaxed">
+                                {job.jobScope}
+                              </p>
+                            </CardContent>
+                          </Card>
+                          <Card className="border border-gray-200 ml-2">
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                <Calendar className="h-5 w-5" />
+                                Timeline
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                              <div className="flex justify-between items-center text-sm">
+                                <span className="text-gray-500">Posted:</span>
+                                <span className="text-gray-900 font-medium">
+                                  {new Date(job.createdAt).toLocaleString(
+                                    "en-GB",
+                                    {
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    }
+                                  )}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span className="text-gray-500">Expires:</span>
+                                <span className="text-gray-900 font-medium">
+                                  {new Date(
+                                    job.jobExpirationDate
+                                  ).toLocaleString("en-GB", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                              </div>
+                            </CardContent>
+                          </Card>
+                          {/* Apply Button in Drawer */}
+                          <div className="sticky bottom-0 bg-white border-t border-gray-200 pt-6 -mx-6 px-6 -mb-6 pb-6">
+                            <Button
+                              className={`h-11 rounded-lg font-semibold w-full ${
+                                job.jobStatus !== "Active" ||
+                                (job.isPremiumJob && !isPremium)
+                                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  : "bg-black hover:bg-gray-800 text-white"
+                              }`}
+                              disabled={
+                                job.jobStatus !== "Active" ||
+                                (job.isPremiumJob && !isPremium)
+                              }
+                              onClick={() => handleApplyJob(job)}
+                            >
+                              {job.jobStatus !== "Active"
+                                ? job.jobStatus === "Expired"
+                                  ? "Expired"
+                                  : "Position Full"
+                                : job.isPremiumJob && !isPremium
+                                ? "Premium Only"
+                                : "Apply For this Job"}
+                            </Button>
+                          </div>
+                        </div>
+                      </SheetContent>
+                    </Sheet>
                   </div>
                 </div>
               </CardContent>
             </Card>
           ))
         ) : (
-          <Card className="border border-gray-200 shadow-md bg-white rounded-xl">
+          <Card
+            key="none"
+            className="border border-gray-200 shadow-md xl:min-w-7xl bg-white rounded-xl"
+          >
             <CardContent className="p-12 text-center">
               <div className="max-w-md mx-auto">
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Search className="w-8 h-8 text-gray-400" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">No jobs found</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">
+                  No jobs found
+                </h3>
                 <p className="text-gray-600 mb-6 leading-relaxed">
-                  We couldn't find any jobs matching your current search criteria. Try adjusting your filters or search
-                  terms.
+                  We couldn't find any jobs matching your current search
+                  criteria. Try adjusting your filters or search terms.
                 </p>
-                <div className="space-y-3">
-                  <div className="text-sm text-gray-500 mb-4">
-                    <p className="font-medium mb-2">Try these suggestions:</p>
-                    <ul className="text-left space-y-1 max-w-xs mx-auto">
-                      <li>• Remove some filters to see more results</li>
-                      <li>• Try different keywords or job titles</li>
-                      <li>• Expand your location search</li>
-                      <li>• Check for spelling mistakes</li>
-                    </ul>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <Button
-                      onClick={clearFilters}
-                      className="bg-black hover:bg-gray-800 text-white h-11 rounded-lg font-semibold"
-                    >
-                      Clear All Filters
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setSearchQuery("")
-                        setLocationFilter("")
-                      }}
-                      className="border border-gray-200 bg-white hover:bg-gray-50 h-11 rounded-lg font-semibold"
-                    >
-                      Reset Search
-                    </Button>
-                  </div>
-                </div>
+                <Button
+                  onClick={clearFilters}
+                  className="bg-black hover:bg-gray-800 text-white h-11 rounded-lg font-semibold"
+                >
+                  Clear All Filters
+                </Button>
               </div>
             </CardContent>
           </Card>
         )}
       </div>
 
-      {/* Load More - Only show when there are results */}
-      {filteredJobs.length > 0 && (
-        <div className="text-center">
-          <Button
-            variant="outline"
-            className="border border-gray-200 bg-white hover:bg-gray-50 h-11 px-8 rounded-lg font-semibold"
-          >
-            Load More Jobs
-          </Button>
-        </div>
-      )}
+      <Dialog open={showApplyDialog} onOpenChange={setShowApplyDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Apply for {selectedJob?.jobTitle}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label
+                htmlFor="rate"
+                className="text-sm font-semibold text-gray-900"
+              >
+                Your Rate per Hour ($)
+              </Label>
+              <Input
+                id="rate"
+                type="number"
+                placeholder="Enter your hourly rate"
+                value={applicationData.ratePerHour}
+                onChange={(e) =>
+                  setApplicationData((prev) => ({
+                    ...prev,
+                    ratePerHour: e.target.value,
+                  }))
+                }
+                className="mt-2"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Job budget: ${selectedJob?.preferredPayrate}/hour
+              </p>
+            </div>
+
+            <div>
+              <Label
+                htmlFor="proposal"
+                className="text-sm font-semibold text-gray-900"
+              >
+                Your Proposal
+              </Label>
+              <Textarea
+                id="proposal"
+                placeholder="Write a compelling proposal explaining why you're the perfect fit for this job..."
+                value={applicationData.proposal}
+                onChange={(e) =>
+                  setApplicationData((prev) => ({
+                    ...prev,
+                    proposal: e.target.value,
+                  }))
+                }
+                maxLength={1000}
+                className="mt-2 min-h-[120px]"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {applicationData.proposal.length}/1000 * (Max 1000 Characters)
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowApplyDialog(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={submitApplication}
+                disabled={
+                  !applicationData.ratePerHour || !applicationData.proposal
+                }
+                className="flex-1 bg-black hover:bg-gray-800 text-white"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Submit Application
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
-  )
+  );
 }

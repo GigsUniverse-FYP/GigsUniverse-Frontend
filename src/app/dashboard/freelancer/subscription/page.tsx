@@ -7,7 +7,6 @@ import { useEffect, useState } from "react"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "react-toastify"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Alert } from "@/components/ui/alert"
 
   interface BillingHistoryItem {
     stripeProductName: string
@@ -19,7 +18,7 @@ import { Alert } from "@/components/ui/alert"
     status: string
   }
 
-    const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",

@@ -48,7 +48,7 @@ import {
   proficiencyLevels,
   languages,
   educationLevels,
-} from "../lib/onboarding-data-emp";
+} from "@/lib/data";
 import { toast } from "react-toastify";
 import Link from "next/link";
 

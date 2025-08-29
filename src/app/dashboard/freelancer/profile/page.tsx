@@ -54,7 +54,7 @@ import {
   jobTitles,
   skillTags,
   educationLevels,
-} from "../lib/onboarding-data";
+} from "@/lib/data";
 import { toast } from "react-toastify";
 
 interface FileData {

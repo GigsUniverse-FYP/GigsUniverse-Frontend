@@ -51,7 +51,7 @@ export default function LandingSubscription() {
       description: "Great for small projects and testing the platform",
       features: [
         "2 job postings per month",
-        "Hire up to 3 candidates per job",
+        "Hire up to 5 candidates concurrently",
         "Standard job postings only",
         "Maximum 30 applications per job",
         "Basic profile customization",
@@ -66,7 +66,7 @@ export default function LandingSubscription() {
       description: "Ideal for businesses hiring remote talent regularly",
       features: [
         "5 job postings per month",
-        "Hire up to 5 candidates per job",
+        "Hire up to 10 candidates concurrently",
         "Premium job postings feature",
         "Maximum 50 applications per job",
         "Full profile customization",

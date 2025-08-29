@@ -55,7 +55,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+
 
 interface AvailableUser {
   id: string;
@@ -253,6 +254,17 @@ export default function ChatInterface() {
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState("");
+
+    const searchParams = useSearchParams()
+    const chatIdFromQuery = searchParams.get("userId")
+  
+    useEffect(() => {
+      if (chatIdFromQuery) {
+        setShowAddChatDialog(true)
+        setNewChatSearch(chatIdFromQuery)
+      }
+    }, [chatIdFromQuery])
+    
 
   const handleReport = () => {
     window.open("/dashboard/freelancer/support-ticket", "_blank");

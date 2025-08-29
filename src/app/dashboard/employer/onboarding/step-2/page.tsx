@@ -18,7 +18,7 @@ import {
   languages,
   proficiencyLevels,
   educationLevels
-} from "../../lib/onboarding-data-emp"
+} from "@/lib/data"
 import { cn } from "@/lib/utils"
 import useOnboardingRedirect from "../../lib/useOnboardingRules"
 

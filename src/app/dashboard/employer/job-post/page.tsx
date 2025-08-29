@@ -1,224 +1,168 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Briefcase,
   Users,
-  Eye,
   Edit,
   Search,
   Calendar,
   DollarSign,
   Clock,
-  Star,
-  MessageCircle,
-  CheckCircle,
-  XCircle,
-  MapPin,
   Plus,
   Filter,
-  MoreHorizontal,
+  ExternalLink,
+  Crown,
 } from "lucide-react"
+import Link from "next/link"
 
-const jobPosts = [
-  {
-    id: 1,
-    title: "Senior React Developer",
-    description: "We're looking for an experienced React developer to build a modern e-commerce platform...",
-    budget: 15000,
-    budgetType: "Fixed",
-    status: "Active",
-    postedDate: "Dec 5, 2024",
-    deadline: "Dec 20, 2024",
-    applicationsCount: 24,
-    viewsCount: 156,
-    skills: ["React", "TypeScript", "Node.js", "AWS"],
-    experienceLevel: "Expert",
-    duration: "3-6 months",
-  },
-  {
-    id: 2,
-    title: "UI/UX Designer",
-    description: "Looking for a creative designer to redesign our mobile app interface...",
-    budget: 75,
-    budgetType: "Hourly",
-    status: "Active",
-    postedDate: "Dec 3, 2024",
-    deadline: "Dec 25, 2024",
-    applicationsCount: 18,
-    viewsCount: 89,
-    skills: ["Figma", "Adobe Creative Suite", "Prototyping"],
-    experienceLevel: "Intermediate",
-    duration: "1-3 months",
-  },
-  {
-    id: 3,
-    title: "Content Writer",
-    description: "Need a skilled writer for blog posts and marketing content...",
-    budget: 1200,
-    budgetType: "Fixed",
-    status: "Draft",
-    postedDate: "Dec 1, 2024",
-    deadline: "Dec 30, 2024",
-    applicationsCount: 0,
-    viewsCount: 0,
-    skills: ["Content Writing", "SEO", "Marketing"],
-    experienceLevel: "Intermediate",
-    duration: "Less than 1 month",
-  },
-  {
-    id: 4,
-    title: "Mobile App Developer",
-    description: "Develop a cross-platform mobile app using React Native...",
-    budget: 12000,
-    budgetType: "Fixed",
-    status: "Closed",
-    postedDate: "Nov 20, 2024",
-    deadline: "Dec 15, 2024",
-    applicationsCount: 31,
-    viewsCount: 203,
-    skills: ["React Native", "iOS", "Android"],
-    experienceLevel: "Expert",
-    duration: "3-6 months",
-  },
-]
-
-const applications = [
-  {
-    id: 1,
-    jobTitle: "Senior React Developer",
-    jobId: 1,
-    freelancer: {
-      name: "Sarah Johnson",
-      avatar: "SJ",
-      title: "Senior React Developer",
-      location: "San Francisco, CA",
-      rating: 4.9,
-      completedJobs: 47,
-      hourlyRate: 85,
-    },
-    appliedDate: "Dec 8, 2024",
-    status: "Under Review",
-    proposedRate: 80,
-    coverLetter: "I'm excited to work on your e-commerce platform. With 5+ years of React experience...",
-    estimatedDuration: "4 months",
-    availability: "Available immediately",
-  },
-  {
-    id: 2,
-    jobTitle: "Senior React Developer",
-    jobId: 1,
-    freelancer: {
-      name: "Mike Chen",
-      avatar: "MC",
-      title: "Full Stack Developer",
-      location: "Remote",
-      rating: 4.8,
-      completedJobs: 32,
-      hourlyRate: 75,
-    },
-    appliedDate: "Dec 7, 2024",
-    status: "Shortlisted",
-    proposedRate: 75,
-    coverLetter: "Your project aligns perfectly with my expertise in React and e-commerce solutions...",
-    estimatedDuration: "3-4 months",
-    availability: "Available in 1 week",
-  },
-  {
-    id: 3,
-    jobTitle: "UI/UX Designer",
-    jobId: 2,
-    freelancer: {
-      name: "Emily Rodriguez",
-      avatar: "ER",
-      title: "UI/UX Designer",
-      location: "New York, NY",
-      rating: 4.7,
-      completedJobs: 28,
-      hourlyRate: 65,
-    },
-    appliedDate: "Dec 6, 2024",
-    status: "Interview Scheduled",
-    proposedRate: 70,
-    coverLetter: "I'd love to help redesign your mobile app. My portfolio includes similar projects...",
-    estimatedDuration: "2 months",
-    availability: "Available now",
-    interviewDate: "Dec 12, 2024 at 2:00 PM",
-  },
-  {
-    id: 4,
-    jobTitle: "Senior React Developer",
-    jobId: 1,
-    freelancer: {
-      name: "Alex Thompson",
-      avatar: "AT",
-      title: "React Developer",
-      location: "Austin, TX",
-      rating: 4.6,
-      completedJobs: 19,
-      hourlyRate: 70,
-    },
-    appliedDate: "Dec 5, 2024",
-    status: "Rejected",
-    proposedRate: 65,
-    coverLetter: "I have experience building e-commerce platforms with React...",
-    estimatedDuration: "5 months",
-    availability: "Available in 2 weeks",
-    rejectionReason: "Looking for someone with more e-commerce experience",
-  },
-]
-
-export default function JobPostsApplicationsPage() {
-  const [activeTab, setActiveTab] = useState("posts")
+interface JobPost {
+  job_post_id: number
+  jobTitle: string
+  jobDescription: string
+  preferredPayrate: string
+  jobStatus: string
+  createdAt: string
+  jobExpirationDate: string
+  applicationsCount: number
+  skillTags: string[]
+  hoursContributionPerWeek: number
+  duration: string
+  isPremiumJob: boolean
+}
+export default function JobPostsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [jobPosts, setJobPosts] = useState<JobPost[]>([])
+
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
+
+  const [userHasPremium, setUserHasPremium] = useState(false)
+  const [jobPostsThisMonth, setJobPostsThisMonth] = useState(0)
+  const [resetDate, setResetDate] = useState<string>("")
+
+  const maxQuota = userHasPremium ? 5 : 2
+  const remaining = maxQuota - jobPostsThisMonth
+  const canPost = remaining > 0
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const resPremium = await fetch(`${backendUrl}/api/employer/subscription/premium-status`, {
+          method: "GET",
+          credentials: "include",
+        })
+        if (!resPremium.ok) throw new Error("Failed to fetch premium status")
+        const premiumData: boolean = await resPremium.json()
+        setUserHasPremium(premiumData)
+
+        const resCount = await fetch(`${backendUrl}/api/job-posts/employer/monthly-count`, {
+          method: "GET",
+          credentials: "include",
+        })
+        if (!resCount.ok) throw new Error("Failed to fetch job post count")
+
+        const data = await resCount.json() 
+        console.log("Monthly count RAW response:", data)
+
+        const parsedCount =
+          typeof data === "number"
+            ? data
+            : typeof data?.count === "number"
+              ? data.count
+              : typeof data?.jobCount === "number"
+                ? data.jobCount
+                : 0
+
+        const parsedResetDate = typeof data === "string" ? data : (data?.resetDate ?? data?.nextReset ?? "")
+
+        setJobPostsThisMonth(parsedCount)
+        setResetDate(parsedResetDate)
+        console.log("Monthly count parsed:", { parsedCount, parsedResetDate })
+      } catch (err) {
+        console.error(err)
+      }
+    }
+
+    fetchData()
+  }, [backendUrl])
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const res = await fetch(`${backendUrl}/api/job-posts/fetch-jobs`, {
+          method: "GET",
+          credentials: "include",
+        })
+
+        if (!res.ok) {
+          console.error("Error fetching employer jobs:", await res.text())
+          throw new Error("Failed to fetch employer jobs")
+        }
+
+        const data: JobPost[] = await res.json()
+        console.log("Raw data from backend:", data)
+
+        const formattedJobs: JobPost[] = data.map((job: any) => ({
+          job_post_id: job.jobPostId,
+          jobTitle: job.jobTitle,
+          jobDescription: job.jobDescription,
+          preferredPayrate: job.preferredPayrate,
+          jobStatus: job.jobStatus,
+          createdAt: job.createdAt,
+          jobExpirationDate: job.jobExpirationDate,
+          applicationsCount: job.applicationsCount,
+          skillTags:
+            typeof job.skillTags === "string"
+              ? job.skillTags.split(",").map((tag: string) => tag.trim())
+              : job.skillTags,
+          hoursContributionPerWeek: job.hoursContributionPerWeek,
+          duration: job.duration,
+          isPremiumJob: job.isPremiumJob,
+        }))
+
+        setJobPosts(formattedJobs)
+
+        console.log(formattedJobs)
+      } catch (err) {
+        console.error("Error loading jobs:", err)
+      }
+    }
+
+    fetchJobs()
+  }, [backendUrl])
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Active":
         return "bg-green-100 text-green-800 border border-green-200"
-      case "Draft":
-        return "bg-gray-100 text-gray-700 border border-gray-200"
       case "Closed":
         return "bg-red-100 text-red-800 border border-red-200"
-      case "Under Review":
-        return "bg-yellow-100 text-yellow-800 border border-yellow-200"
-      case "Shortlisted":
+      case "Expired":
+        return "bg-orange-100 text-orange-800 border border-orange-200"
+      case "Full":
         return "bg-blue-100 text-blue-800 border border-blue-200"
-      case "Interview Scheduled":
-        return "bg-black text-white"
-      case "Rejected":
-        return "bg-gray-100 text-gray-600 border border-gray-200"
       default:
         return "bg-gray-100 text-gray-700 border border-gray-200"
     }
   }
 
   const filteredPosts = jobPosts.filter((post) => {
-    const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = statusFilter === "all" || post.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
-
-  const filteredApplications = applications.filter((app) => {
-    const matchesSearch =
-      app.jobTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.freelancer.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = statusFilter === "all" || app.status === statusFilter
+    const matchesSearch = post.jobTitle.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesStatus = statusFilter === "all" || post.jobStatus === statusFilter
     return matchesSearch && matchesStatus
   })
 
   return (
-    <div className="w-full sm:max-w-8xl mx-auto space-y-6 mb-5 -ml-10 sm:ml-0">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 mb-5">
       {/* Header */}
       <div className="text-center sm:text-left">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-4 mb-4">Job Posts & Applications</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-4 mb-4">Job Posts</h1>
       </div>
 
       {/* Overview Stats */}
@@ -226,11 +170,11 @@ export default function JobPostsApplicationsPage() {
         <Card className="border border-gray-200 shadow-sm bg-white">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Jobs Posted</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-gray-600 truncate">Total Jobs Posted</p>
                 <p className="text-2xl font-bold text-black">{jobPosts.length}</p>
               </div>
-              <div className="p-2 bg-gray-100 rounded-lg">
+              <div className="p-2 bg-gray-100 rounded-lg flex-shrink-0">
                 <Briefcase className="h-4 w-4 text-gray-700" />
               </div>
             </div>
@@ -239,14 +183,14 @@ export default function JobPostsApplicationsPage() {
         <Card className="border border-gray-200 shadow-sm bg-white">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Active Jobs</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-gray-600 truncate">Active Jobs</p>
                 <p className="text-2xl font-bold text-black">
-                  {jobPosts.filter((job) => job.status === "Active").length}
+                  {jobPosts.filter((job) => job.jobStatus === "Active").length}
                 </p>
               </div>
-              <div className="p-2 bg-gray-100 rounded-lg">
-                <Eye className="h-4 w-4 text-gray-700" />
+              <div className="p-2 bg-gray-100 rounded-lg flex-shrink-0">
+                <Briefcase className="h-4 w-4 text-gray-700" />
               </div>
             </div>
           </CardContent>
@@ -254,11 +198,13 @@ export default function JobPostsApplicationsPage() {
         <Card className="border border-gray-200 shadow-sm bg-white">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Applications</p>
-                <p className="text-2xl font-bold text-black">{applications.length}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-gray-600 truncate">Inactive Jobs</p>
+                <p className="text-2xl font-bold text-black">
+                  {jobPosts.filter((job) => job.jobStatus === "Inactive").length}
+                </p>
               </div>
-              <div className="p-2 bg-gray-100 rounded-lg">
+              <div className="p-2 bg-gray-100 rounded-lg flex-shrink-0">
                 <Users className="h-4 w-4 text-gray-700" />
               </div>
             </div>
@@ -267,293 +213,214 @@ export default function JobPostsApplicationsPage() {
         <Card className="border border-gray-200 shadow-sm bg-white">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Pending Review</p>
-                <p className="text-2xl font-bold text-black">
-                  {applications.filter((app) => app.status === "Under Review").length}
-                </p>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-gray-600 truncate">Premium Jobs</p>
+                <p className="text-2xl font-bold text-black">{jobPosts.filter((job) => job.isPremiumJob).length}</p>
               </div>
-              <div className="p-2 bg-gray-100 rounded-lg">
-                <Clock className="h-4 w-4 text-gray-700" />
+              <div className="p-2 bg-gray-100 rounded-lg flex-shrink-0">
+                <Crown className="h-4 w-4 text-gray-700" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 h-12 bg-gray-100 rounded-lg p-1">
-          <TabsTrigger value="posts" className="font-semibold rounded-md h-10">
-            Job Posts ({jobPosts.length})
-          </TabsTrigger>
-          <TabsTrigger value="applications" className="font-semibold rounded-md h-10">
-            Applications ({applications.length})
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Filters */}
-        <Card className="border border-gray-200 shadow-sm bg-white mt-6">
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder={`Search ${activeTab === "posts" ? "job posts" : "applications"}...`}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 border border-gray-200"
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-48 border border-gray-200">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  {activeTab === "posts" ? (
-                    <>
-                      <SelectItem value="Active">Active</SelectItem>
-                      <SelectItem value="Draft">Draft</SelectItem>
-                      <SelectItem value="Closed">Closed</SelectItem>
-                    </>
-                  ) : (
-                    <>
-                      <SelectItem value="Under Review">Under Review</SelectItem>
-                      <SelectItem value="Shortlisted">Shortlisted</SelectItem>
-                      <SelectItem value="Interview Scheduled">Interview Scheduled</SelectItem>
-                      <SelectItem value="Rejected">Rejected</SelectItem>
-                    </>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        <TabsContent value="posts" className="space-y-4">
-          {/* Post New Job Button */}
-          <div className="flex justify-end">
-            <Button className="bg-black hover:bg-gray-800 text-white h-11 rounded-lg font-semibold">
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
+        {/* Left Buttons */}
+        <div className="flex flex-col xs:flex-row gap-3 w-full sm:w-auto">
+          <Link href={jobPostsThisMonth >= (userHasPremium ? 5 : 2) ? "#" : "/dashboard/employer/job-post/create"}>
+            <Button
+              className="bg-black hover:bg-gray-800 w-full xs:w-40 text-white h-11 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={jobPostsThisMonth >= (userHasPremium ? 5 : 2)}
+            >
               <Plus className="w-4 h-4 mr-2" />
-              Post New Job
+              Post a Job
             </Button>
-          </div>
+          </Link>
+        </div>
 
-          {/* Job Posts */}
-          {filteredPosts.map((job) => (
-            <Card key={job.id} className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h3 className="text-lg font-bold text-black mb-1">{job.title}</h3>
-                        <p className="text-gray-600 text-sm mb-2 line-clamp-2">{job.description}</p>
-                        <Badge className={getStatusColor(job.status)}>{job.status}</Badge>
+        {/* Quota and reset info */}
+        <div className="mt-3 sm:mt-0 text-sm text-gray-600 text-left sm:text-right w-full sm:w-auto">
+          <p className="font-medium">
+            Job Posts this month:{" "}
+            <span className="text-black">
+              {jobPostsThisMonth}/{userHasPremium ? 5 : 2}
+            </span>
+          </p>
+          {resetDate &&
+            (() => {
+              const [datePart, timePart] = resetDate.split(" ") // "01/09/2025" , "00:00"
+              const [day, month, year] = datePart.split("/")
+              const formatted = `${day}/${month}/${year} ${timePart}`
+              return <p className="text-gray-500 break-words">Next reset: {formatted}</p>
+            })()}
+        </div>
+      </div>
+
+      {/* Filters */}
+      <Card className="border border-gray-200 shadow-sm bg-white">
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search job posts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 border border-gray-200"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-48 border border-gray-200">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="Active">Active</SelectItem>
+                <SelectItem value="Inactive">Inactive</SelectItem>
+                <SelectItem value="Expired">Expired</SelectItem>
+                <SelectItem value="Full">Full</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Job Posts */}
+      <div className="space-y-4">
+        {filteredPosts.map((job, index) => (
+          <Card
+            key={job.job_post_id ?? `job-${index}`}
+            className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-shadow"
+          >
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                <div className="flex-1 min-w-0 max-w-4xl">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <h3 className="text-lg font-bold text-black break-words">{job.jobTitle}</h3>
+                        {job.isPremiumJob && (
+                          <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-200 flex-shrink-0">
+                            <Crown className="h-3 w-3 mr-1" />
+                            Premium
+                          </Badge>
+                        )}
                       </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm text-gray-600">
-                          {job.budgetType === "Fixed" ? `$${job.budget.toLocaleString()}` : `$${job.budget}/hr`}
-                        </span>
+                      <div className="max-w-2xl">
+                        <p className="text-gray-600 text-sm mb-2 line-clamp-2 break-words overflow-hidden">
+                          {job.jobDescription}
+                        </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm text-gray-600">{job.applicationsCount} applications</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Eye className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm text-gray-600">{job.viewsCount} views</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm text-gray-600">Due: {job.deadline}</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {job.skills.map((skill, index) => (
-                        <Badge
-                          key={index}
-                          className="bg-gray-100 text-gray-700 border border-gray-200 text-xs px-2 py-1 rounded-lg"
-                        >
-                          {skill}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Posted: {job.postedDate} • {job.experienceLevel} • {job.duration}
+                      <Badge className={getStatusColor(job.jobStatus)}>{job.jobStatus}</Badge>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-2 lg:ml-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-4">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <DollarSign className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                      <span className="text-sm text-gray-600 truncate">{job.preferredPayrate}/hr</span>
+                    </div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Users className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                      <span className="text-sm text-gray-600 truncate">{job.applicationsCount} applications</span>
+                    </div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Clock className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                      <span className="text-sm text-gray-600 truncate">{job.hoursContributionPerWeek}h/week</span>
+                    </div>
+                    <div className="flex items-center gap-2 min-w-0 sm:col-span-2 xl:col-span-1">
+                      <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                      <span className="text-sm text-gray-600 truncate">
+                        Expires:&nbsp;
+                        {job.jobExpirationDate
+                          ? new Date(job.jobExpirationDate).toLocaleString("en-GB", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "N/A"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {job.skillTags.map((skill, index) => (
+                      <Badge
+                        key={index}
+                        className="bg-gray-100 text-gray-700 border border-gray-200 text-xs px-2 py-1 rounded-lg"
+                      >
+                        {skill}
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="text-xs text-gray-500 break-words">
+                    Posted: &nbsp;
+                    {job.createdAt
+                      ? new Date(job.createdAt).toLocaleString("en-GB", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "N/A"}{" "}
+                    • {job.duration}
+                  </div>
+                </div>
+                <div className="flex flex-row lg:flex-col gap-2 lg:ml-4 w-full lg:w-auto">
+                  <Link href={`/dashboard/employer/job-post/${job.job_post_id}`} className="flex-1 lg:flex-none">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border border-gray-200 bg-transparent hover:bg-gray-50"
+                      className="border border-gray-200 bg-transparent hover:bg-gray-50 w-full"
                     >
-                      <Eye className="h-4 w-4 mr-2" />
-                      View
+                      View Details
                     </Button>
+                  </Link>
+                  {job.jobStatus === "Expired" ? (
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border border-gray-200 bg-transparent hover:bg-gray-50"
+                      className="border border-gray-200 bg-transparent w-full lg:w-auto cursor-not-allowed opacity-50 flex-1 lg:flex-none"
+                      disabled
                     >
                       <Edit className="h-4 w-4 mr-2" />
                       Edit
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border border-gray-200 bg-transparent hover:bg-gray-50"
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </TabsContent>
-
-        <TabsContent value="applications" className="space-y-4">
-          {/* Applications */}
-          {filteredApplications.map((application) => (
-            <Card
-              key={application.id}
-              className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-shadow"
-            >
-              <CardContent className="p-6">
-                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-start gap-4 mb-4">
-                      <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center shadow-sm">
-                        <span className="font-semibold text-gray-700 text-sm">{application.freelancer.avatar}</span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-lg font-bold text-black">{application.freelancer.name}</h3>
-                          <Badge className={getStatusColor(application.status)}>{application.status}</Badge>
-                        </div>
-                        <p className="text-gray-600 font-medium mb-1">{application.freelancer.title}</p>
-                        <p className="text-sm text-gray-600 mb-2">Applied for: {application.jobTitle}</p>
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <div className="flex items-center gap-1">
-                            <Star className="h-3 w-3 text-black fill-current" />
-                            <span>{application.freelancer.rating}</span>
-                          </div>
-                          <span>{application.freelancer.completedJobs} jobs</span>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            <span>{application.freelancer.location}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                      <div>
-                        <p className="text-xs text-gray-500">Proposed Rate</p>
-                        <p className="font-semibold text-gray-900">${application.proposedRate}/hr</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Duration</p>
-                        <p className="font-semibold text-gray-900">{application.estimatedDuration}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Availability</p>
-                        <p className="font-semibold text-gray-900">{application.availability}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Applied</p>
-                        <p className="font-semibold text-gray-900">{application.appliedDate}</p>
-                      </div>
-                    </div>
-
-                    {/* Special Status Information */}
-                    {application.status === "Interview Scheduled" && application.interviewDate && (
-                      <div className="bg-black text-white p-3 rounded-lg mb-4">
-                        <p className="font-medium">Interview Scheduled</p>
-                        <p className="text-sm">{application.interviewDate}</p>
-                      </div>
-                    )}
-                    {application.status === "Rejected" && application.rejectionReason && (
-                      <div className="bg-gray-50 p-3 rounded-lg mb-4">
-                        <p className="font-medium text-gray-700 mb-1">Rejection Reason:</p>
-                        <p className="text-sm text-gray-600">{application.rejectionReason}</p>
-                      </div>
-                    )}
-
-                    <details className="group">
-                      <summary className="cursor-pointer text-sm text-gray-600 hover:text-black">
-                        View cover letter
-                      </summary>
-                      <div className="mt-2 p-3 bg-gray-50 rounded-lg">
-                        <p className="text-sm text-gray-700">{application.coverLetter}</p>
-                      </div>
-                    </details>
-                  </div>
-                  <div className="flex flex-col gap-2 lg:ml-4">
-                    {application.status === "Under Review" && (
-                      <>
-                        <Button className="bg-black hover:bg-gray-800 text-white h-9 rounded-lg">
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Shortlist
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="border border-gray-200 bg-transparent hover:bg-gray-50 h-9 rounded-lg"
-                        >
-                          <XCircle className="h-4 w-4 mr-2" />
-                          Reject
-                        </Button>
-                      </>
-                    )}
-                    {application.status === "Shortlisted" && (
-                      <Button className="bg-black hover:bg-gray-800 text-white h-9 rounded-lg">
-                        Schedule Interview
+                  ) : (
+                    <Link href={`/dashboard/employer/job-post/${job.job_post_id}/edit`} className="flex-1 lg:flex-none">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border border-gray-200 bg-transparent hover:bg-gray-50 w-full"
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
                       </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      className="border border-gray-200 bg-transparent hover:bg-gray-50 h-9 rounded-lg"
-                    >
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      Message
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-gray-600 hover:text-black h-8 rounded-lg">
-                      View Profile
-                    </Button>
-                  </div>
+                    </Link>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </TabsContent>
-      </Tabs>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-      {/* Empty States */}
-      {((activeTab === "posts" && filteredPosts.length === 0) ||
-        (activeTab === "applications" && filteredApplications.length === 0)) && (
-        <Card className="border border-gray-200 shadow-sm bg-white">
-          <CardContent className="p-12 text-center">
+      {/* Empty State */}
+      {filteredPosts.length === 0 && (
+        <Card className="border border-gray-200 shadow-sm bg-white max-w-4xl mx-auto">
+          <CardContent className="p-8 sm:p-12 text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              {activeTab === "posts" ? (
-                <Briefcase className="w-8 h-8 text-gray-400" />
-              ) : (
-                <Users className="w-8 h-8 text-gray-400" />
-              )}
+              <Briefcase className="w-8 h-8 text-gray-400" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No {activeTab === "posts" ? "job posts" : "applications"} found
-            </h3>
-            <p className="text-gray-600 mb-4">
-              {activeTab === "posts"
-                ? "You haven't posted any jobs yet or no jobs match your search criteria."
-                : "No applications match your current search criteria."}
-            </p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No job posts found</h3>
+            <div className="max-w-md mx-auto">
+              <p className="text-gray-600 mb-4 break-words">
+                You haven't posted any jobs yet or no jobs match your search criteria.
+              </p>
+            </div>
             <Button
               onClick={() => {
                 setSearchQuery("")

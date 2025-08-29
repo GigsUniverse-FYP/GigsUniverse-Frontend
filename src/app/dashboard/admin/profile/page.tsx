@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { User, Edit3, Save, X, MapPin, Mail, Phone, Calendar, Globe, Plus, Minus, Upload, Users } from "lucide-react"
 import { toast } from "react-toastify"
-import { languages, locationData, proficiencyLevels } from "../../freelancer/lib/onboarding-data"
+import { languages, locationData, proficiencyLevels } from "@/lib/data"
 
 interface LanguageProficiency {
   language: string

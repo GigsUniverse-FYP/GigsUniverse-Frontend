@@ -22,7 +22,7 @@ import {
   skillTags,
   languages,
   proficiencyLevels,
-} from "../../lib/onboarding-data"
+} from "@/lib/data"
 import { cn } from "@/lib/utils"
 import useOnboardingRedirect from "../../lib/useOnboardingRule"
 

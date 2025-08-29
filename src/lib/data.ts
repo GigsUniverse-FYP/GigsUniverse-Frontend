@@ -1,3 +1,4 @@
+// no changes anymore
 export const locationData = [
   "Australia",
   "Bangladesh",
@@ -45,7 +46,7 @@ export const locationData = [
   "Vietnam"
 ];
 
-
+// no changes anymore
 export const educationLevels = [
   "High School",
   "Certificate",
@@ -57,7 +58,7 @@ export const educationLevels = [
   "Professional Certification"
 ];
 
-
+// no changes anymore
 export const jobCategories = [
   "Freelance",
   "Part Time",
@@ -148,6 +149,7 @@ export const skillTags = [
   "WordPress"
 ];
 
+// no changes anymore
 export const languages = [
   "Arabic",
   "Bengali",
@@ -184,5 +186,21 @@ export const languages = [
   "Vietnamese"
 ];
 
-
+// no changes anymore
 export const proficiencyLevels = ["Beginner", "Intermediate", "Expert", "Native"]
+
+// no changes anymore
+export const experienceLevels = ["Entry Level", "Mid Level", "Senior Level"]
+
+// no changes anymore
+export const jobField = [
+  "IT & Technology",
+  "Marketing & Sales",
+  "Design & Creative",
+  "Writing & Content",
+  "Business & Finance",
+  "Engineering",
+  "Healthcare",
+  "Education",
+  "Legal",
+]

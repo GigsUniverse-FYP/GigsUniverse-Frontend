@@ -555,7 +555,7 @@ export default function CompanyWithData({ companyId }: CompanyWithDataProps) {
 
   if (isEditing) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 lg:min-w-5xl">
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Edit Company Information</h2>
@@ -1016,12 +1016,11 @@ export default function CompanyWithData({ companyId }: CompanyWithDataProps) {
       </div>
     )
   }
-
   // View Mode
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 lg:min-w-5xl">
       {/* Company Header */}
-      <Card className="border border-gray-200 bg-white rounded-xl">
+      <Card className="border border-gray-200 bg-white rounded-xl ">
         <CardContent className="p-8">
           <div className="flex flex-col lg:flex-row justify-between items-start gap-6">
             <div className="flex items-start gap-6">
