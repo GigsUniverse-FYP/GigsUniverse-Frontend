@@ -121,6 +121,39 @@ export default function JobDetailsPage({
 
   const [rejectReason, setRejectReason] = useState("")
 
+  const [contractStatuses, setContractStatuses] = useState<Record<string, string>>({});
+  
+    useEffect(() => {
+      const fetchContractStatuses = async () => {
+        const ids = applications
+          .filter(app => app.jobStatus === "contract")
+          .map(app => app.id);
+  
+        if (ids.length === 0) return;
+  
+        try {
+          const res = await fetch(`${backendUrl}/api/contracts/statuses`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(ids),
+          });
+  
+          if (!res.ok) throw new Error("Failed to fetch contract statuses");
+  
+          const data: Record<string, string> = await res.json();
+          setContractStatuses(data);
+  
+          console.log(data);
+  
+        } catch (err) {
+          console.error(err);
+        }
+      };
+  
+      fetchContractStatuses();
+    }, [applications, backendUrl]);
+
   useEffect(() => {
     const fetchApplications = async () => {
       try {
@@ -609,9 +642,29 @@ export default function JobDetailsPage({
                             </Button>
                           </>
                         ) : application.jobStatus === "contract" ? (
-                             <div className="inline-block bg-green-100 border border-green-400 text-green-700 text-sm px-3 py-1 rounded-lg">
-                               Contract Sent
-                            </div>
+                          (() => {
+                            const status = contractStatuses[application.id]; // from batch API
+
+                            if (!status) return null;
+
+                            const baseStyles = "inline-block text-sm px-3 py-1 rounded-lg";
+
+                            switch (status) {
+                              case "pending":
+                                return <span className={`${baseStyles} bg-green-100 border border-green-400 text-green-700`}>Contract Sent</span>;
+                              case "rejected":
+                                return <span className={`${baseStyles} bg-red-100 border border-red-400 text-red-700`}>Rejected</span>;
+                              case "upcoming":
+                              case "active":
+                                return <span className={`${baseStyles} bg-green-200 border border-green-500 text-green-800`}>Accepted</span>;
+                              case "cancelled":
+                                return <span className={`${baseStyles} bg-yellow-100 border border-yellow-400 text-yellow-700`}>Cancelled</span>;
+                              case "completed":
+                                return <span className={`${baseStyles} bg-blue-100 border border-blue-400 text-blue-700`}>Completed</span>;
+                              default:
+                                return null;
+                            }
+                          })()
                         ) : (
                           <>
                             {/* Reject */}

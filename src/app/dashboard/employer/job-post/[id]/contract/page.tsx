@@ -20,10 +20,10 @@ import {
 import { CalendarDays, DollarSign, Clock, FileText, User, Building } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { toast } from "react-toastify"
-
+import { useReactToPrint } from "react-to-print";
 
 export default function EmployerContractPage() {
-
+  const contractRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
 
   const employerId = searchParams.get("employerId");
@@ -46,7 +46,12 @@ export default function EmployerContractPage() {
     agreedToTerms: false,
     jobApplicationId: jobApplicationId || "",
   })
-  
+
+  const handlePrint = useReactToPrint({
+    contentRef: contractRef,
+    documentTitle: `Contract_${formData.jobName}_${formData.freelancerName}`,
+    onAfterPrint: () => console.log("PDF generated!"),
+  });
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -93,41 +98,108 @@ export default function EmployerContractPage() {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
+  const [ premium, setPremium ] = useState(false);
+  
+    useEffect(() => {
+        const fetchPremiumStatus = async () => {
+          try {
+            const res = await fetch(`${backendUrl}/api/employer/subscription/premium-status`, {
+              method: "GET",
+              credentials: "include", 
+            })
+    
+            if (!res.ok) {
+              throw new Error("Failed to fetch premium status")
+            }
+    
+            const data: boolean = await res.json()
+            setPremium(data)
+    
+          } catch (error) {
+            console.error(error)
+          }
+        }
+    
+        fetchPremiumStatus()
+      }, [])
+
   const handleSendContract = async () => {
     try {
-        const res = await fetch(`${backendUrl}/api/contracts/create`, {
+      const now = new Date();
+
+      const start = new Date(formData.startDate);
+      const end = new Date(formData.endDate);
+
+      // 1. Check if start or end are in the past
+      if (start < now) {
+        toast.error("Start date cannot be in the past.");
+        return;
+      }
+
+      if (end < now) {
+        toast.error("End date cannot be in the past.");
+        return;
+      }
+
+      // 2. Check if end is before start
+      if (end < start) {
+        toast.error("End date cannot be before start date.");
+        return;
+      }
+
+      const countRes = await fetch(`${backendUrl}/api/contracts/count-active`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!countRes.ok) throw new Error("Failed to fetch active contracts count");
+
+      const { count } = await countRes.json();
+
+      // 2. Determine limit based on premium status
+      const maxContracts = premium ? 10 : 5;
+
+      if (count >= maxContracts) {
+        toast.error(`You have reached the maximum of ${maxContracts} active contracts. Any rejected, completed, or cancelled contracts will free up slots.`);
+        return;
+      }
+
+      // If validation passes, proceed with sending contract
+      const res = await fetch(`${backendUrl}/api/contracts/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-            agreedPayRatePerHour: formData.payRate,
-            hourPerWeek: formData.hoursPerWeek,
-            contractStartDate: formData.startDate,
-            contractEndDate: formData.endDate,
-            jobId: formData.jobId,
-            employerId: formData.employerId,
-            freelancerId: formData.freelancerId,
-            jobApplicationId: formData.jobApplicationId
+          agreedPayRatePerHour: formData.payRate,
+          hourPerWeek: formData.hoursPerWeek,
+          contractStartDate: formData.startDate,
+          contractEndDate: formData.endDate,
+          jobId: formData.jobId,
+          employerId: formData.employerId,
+          freelancerId: formData.freelancerId,
+          jobApplicationId: formData.jobApplicationId
         }),
-        });
+      });
 
-        if (!res.ok) throw new Error("Failed to send contract");
+      if (!res.ok) throw new Error("Failed to send contract");
 
-        toast.success("Contract sent successfully. Auto Rejection Upon 3 Days without Response.");
+      handlePrint();
+      toast.success("Contract sent successfully. Auto Rejection Upon 3 Days without Response.");
 
-        setTimeout(() => {
-            window.location.href = `/dashboard/employer/job-post/${jobId}`;
-        }, 3000);
+      setTimeout(() => {
+        window.location.href = `/dashboard/employer/job-post/${formData.jobId}`;
+      }, 3000);
 
     } catch (err) {
-        console.error("Error sending contract:", err);
+      console.error("Error sending contract:", err);
     }
-};
+  };
+
 
   
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background p-6" ref={contractRef}>
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">GigsUniverse Job Contract</h1>
@@ -331,7 +403,7 @@ export default function EmployerContractPage() {
             <AlertDialogTrigger asChild>
               <Button
                 size="lg"
-                className="px-8"
+                className="px-8 no-print"
                 disabled={
                     !formData.payRate ||
                     !formData.startDate ||

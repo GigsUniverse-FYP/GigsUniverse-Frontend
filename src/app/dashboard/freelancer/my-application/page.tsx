@@ -9,89 +9,6 @@ import { Calendar, Clock, DollarSign, Eye, MessageCircle, Search, Filter, FileTe
 import { useEffect, useState } from "react"
 import Link from "next/link"
 
-// const applications = [
-//   {
-//     id: 1,
-//     jobTitle: "Senior React Developer",
-//     company: "TechCorp Inc.",
-//     appliedDate: "Dec 8, 2024",
-//     status: "pending",
-//     rejectReason: "",
-//     jobExperience: "2-3",
-//     level: "senior level",
-//     salary: "$80 - $120",
-//     salaryOffered: "$100",
-//     location: "global",
-//     type: "part time",
-//     proposal:
-//       "I am excited to apply for the Senior React Developer position at TechCorp Inc. With my extensive experience in React development and passion for creating innovative web solutions, I believe I would be a valuable addition to your team.",
-//   },
-//   {
-//     id: 2,
-//     jobTitle: "Full Stack Engineer",
-//     company: "StartupXYZ",
-//     appliedDate: "Dec 5, 2024",
-//     status: "shortlisted",
-//     rejectReason: "",
-//     jobExperience: "3-5",
-//     level: "mid level",
-//     salary: "$90 - $130",
-//     salaryOffered: "$110",
-//     location: "France",
-//     type: "freelance",
-//     proposal:
-//       "Your company's mission aligns perfectly with my career goals. I have 4 years of full-stack development experience and would love to contribute to your innovative projects.",
-//   },
-//   {
-//     id: 3,
-//     jobTitle: "Frontend Developer",
-//     company: "DesignStudio",
-//     appliedDate: "Dec 3, 2024",
-//     status: "rejected",
-//     rejectReason: "not enough experience in design systems",
-//     jobExperience: "1-2",
-//     level: "entry level",
-//     salary: "$70 - $90",
-//     salaryOffered: "$75",
-//     location: "China",
-//     type: "gig internship",
-//     proposal:
-//       "I would love to contribute to your creative team with my frontend development skills and eagerness to learn design principles.",
-//   },
-//   {
-//     id: 4,
-//     jobTitle: "React Native Developer",
-//     company: "MobileFirst",
-//     appliedDate: "Nov 30, 2024",
-//     status: "contract",
-//     rejectReason: "",
-//     jobExperience: "3-4",
-//     level: "mid level",
-//     salary: "$85 - $115",
-//     salaryOffered: "$95",
-//     location: "global",
-//     type: "freelance",
-//     proposal:
-//       "I am passionate about mobile development and would love to join your team. My experience with React Native and cross-platform development makes me an ideal candidate.",
-//   },
-//   {
-//     id: 5,
-//     jobTitle: "UI/UX Developer",
-//     company: "CreativeAgency",
-//     appliedDate: "Nov 28, 2024",
-//     status: "pending",
-//     rejectReason: "",
-//     jobExperience: "2-4",
-//     level: "mid level",
-//     salary: "$60 - $80",
-//     salaryOffered: "$70",
-//     location: "global",
-//     type: "part time",
-//     proposal:
-//       "My background in both development and design makes me a perfect fit for this role. I have experience creating user-centered designs and implementing them with modern web technologies.",
-//   },
-// ]
-
 interface Application {
   id: number
   jobTitle: string
@@ -117,6 +34,39 @@ export default function AppliedJobsPage() {
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   const [applications, setApplications] = useState<Application[]>([])
+
+  const [contractStatuses, setContractStatuses] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const fetchContractStatuses = async () => {
+      const ids = applications
+        .filter(app => app.status === "contract")
+        .map(app => app.id);
+
+      if (ids.length === 0) return;
+
+      try {
+        const res = await fetch(`${backendUrl}/api/contracts/statuses`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(ids),
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch contract statuses");
+
+        const data: Record<string, string> = await res.json();
+        setContractStatuses(data);
+
+        console.log(data);
+
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchContractStatuses();
+  }, [applications, backendUrl]);
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -254,7 +204,6 @@ export default function AppliedJobsPage() {
                 <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="shortlisted">Shortlisted</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
                 <SelectItem value="contract">Contract</SelectItem>
               </SelectContent>
             </Select>
@@ -338,12 +287,36 @@ export default function AppliedJobsPage() {
                 </div>
 
                 <div className="flex flex-col gap-2 lg:ml-4">
-                  {application.status === "contract" && (
-                    <Button className="bg-green-600 hover:bg-green-700 text-white">
-                      <FileText className="h-4 w-4 mr-2" />
-                      Open Contract
-                    </Button>
-                  )}
+                  {application.status === "contract" && (() => {
+                    const status = contractStatuses[application.id]; 
+                    if (!status) return null;
+
+                    const baseStyles = "text-sm px-3 py-1 rounded-md font-semibold inline-flex items-center gap-1";
+
+                    switch (status) {
+                      case "pending":
+                        return (
+                          <Link href={`/dashboard/freelancer/my-application/contract?jobApplicationId=${application.id}`}>
+                            <Button className={`${baseStyles} bg-green-600 hover:bg-green-700 text-white`}>
+                              <FileText className="h-4 w-4" />
+                              Open Contract
+                            </Button>
+                          </Link>
+                        );
+                      case "rejected":
+                        return <Button className={`${baseStyles} bg-red-600 text-white cursor-default`}>Rejected</Button>;
+                      case "upcoming":
+                      case "active":
+                        return <Button className={`${baseStyles} bg-green-600 text-white cursor-default`}>Accepted</Button>;
+                      case "cancelled":
+                        return <Button className={`${baseStyles} bg-yellow-500 text-white cursor-default`}>Cancelled</Button>;
+                      case "completed":
+                        return <Button className={`${baseStyles} bg-blue-600 text-white cursor-default`}>Completed</Button>;
+                      default:
+                        return null;
+                    }
+                  })()}
+
                   <Link href={`/dashboard/freelancer/chat?userId=${application.employerId}`} target="_blank" rel="noopener noreferrer">
                   <Button variant="outline" className="border border-gray-200 w-full md:w-35 bg-transparent">
                     <MessageCircle className="h-4 w-4 mr-2" />

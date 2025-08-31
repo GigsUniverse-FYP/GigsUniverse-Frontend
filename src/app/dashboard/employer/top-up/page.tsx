@@ -24,29 +24,6 @@ import { toast } from "react-toastify"
 
 const quickAmounts = [50, 100, 500, 1000, 2500, 5000]
 
-// mock sample data
-// const transactionHistory = [
-//   {
-//     id: "TXN-001",
-//     type: "Top-up",
-//     amount: 500,
-//     method: "Credit Card",
-//     status: "Completed",
-//     date: "Dec 8, 2024",
-//     description: "Account credit top-up",
-//     currency: "usd"
-//   },
-//   {
-//     id: "TXN-002",
-//     type: "Payment",
-//     amount: -1200,
-//     method: "Account Credit",
-//     status: "Completed",
-//     date: "Dec 7, 2024",
-//     description: "Payment to Sarah Johnson - React Developer",
-//     currency: "usd"
-//   },
-// ]
 
 interface Transaction {
   id: string
