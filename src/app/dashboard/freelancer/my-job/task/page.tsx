@@ -59,7 +59,6 @@ export const formatDate = (isoDate: string | undefined | null) => {
 }
 
 export default function FreelancerTasksPage() {
-  const [tasks, setTasks] = useState<Task[]>([])
   const [showCancelContract, setShowCancelContract] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<{ [key: number]: File[] }>({})
   const [submissionNotes, setSubmissionNotes] = useState<{ [key: number]: string }>({})
@@ -139,14 +138,26 @@ export default function FreelancerTasksPage() {
   }, [employerId, freelancerId, contractId])
 
   const handleFileUpload = (taskId: number, files: FileList | null) => {
-    if (files) {
-      const fileArray = Array.from(files).filter((file) => file.size <= 15 * 1024 * 1024) // 15MB limit
+    if (!files) return;
+
+    const maxSize = 15 * 1024 * 1024; // 15MB
+    const validFiles: File[] = [];
+    
+    Array.from(files).forEach((file) => {
+      if (file.size <= maxSize) {
+        validFiles.push(file);
+      } else {
+        toast.error(`File "${file.name}" exceeds the 15MB upload limit.`);
+      }
+    });
+
+    if (validFiles.length > 0) {
       setUploadedFiles((prev) => ({
         ...prev,
-        [taskId]: [...(prev[taskId] || []), ...fileArray],
-      }))
+        [taskId]: [...(prev[taskId] || []), ...validFiles],
+      }));
     }
-  }
+  };
 
   const removeFile = (taskId: number, fileIndex: number) => {
     setUploadedFiles((prev) => ({

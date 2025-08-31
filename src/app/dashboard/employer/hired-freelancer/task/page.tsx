@@ -6,9 +6,12 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, Edit, Check, X, XCircle, FileText, MessageCircle } from "lucide-react"
+import { Plus, Edit, Check, X, XCircle, FileText, MessageCircle, Download, Delete } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { toast } from "react-toastify"
+import Link from "next/link"
+import { AlertDialogHeader, AlertDialogFooter, AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog"
+
 
 interface Task {
   taskId: number
@@ -29,17 +32,28 @@ interface Task {
   freelancerId: string
   jobId: string
   contractId: string
-  submittedFiles?: { name: string; size: number; url: string }[]
 }
 
 interface Contract {
-  contractId: string;
-  contractEndDate: string; 
+  contractId: string
+  contractEndDate: string
+}
+
+export interface FileEntry {
+  fileName: string
+  fileType: string
+  fileSize: number
+  fileData: string
+}
+
+export interface TaskWithFilesDTO {
+  task: Task
+  files: FileEntry[]
 }
 
 export const formatDate = (isoDate: string | undefined | null) => {
-  if (!isoDate) return "";
-  const date = new Date(isoDate);
+  if (!isoDate) return ""
+  const date = new Date(isoDate)
   return date.toLocaleString("en-GB", {
     day: "2-digit",
     month: "2-digit",
@@ -47,15 +61,13 @@ export const formatDate = (isoDate: string | undefined | null) => {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-  });
-};
+  })
+}
 
 export default function EmployerTasksPage() {
-  const [tasks, setTasks] = useState<Task[]>([])
   const [calculatedPay, setCalculatedPay] = useState("0")
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingTask, setEditingTask] = useState<number | null>(null)
-  const [editingComment, setEditingComment] = useState<number | null>(null)
   const [showCancelContract, setShowCancelContract] = useState(false)
   const [showCompleteContract, setShowCompleteContract] = useState(false)
   const [showRejectDialog, setShowRejectDialog] = useState(false)
@@ -72,6 +84,13 @@ export default function EmployerTasksPage() {
     contractId: "",
   })
 
+  const [approveTaskId, setApproveTaskId] = useState<number | null>(null)
+  const [approveTaskDialog, setApproveTaskDialog] = useState(false)
+
+  const [ showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [ deleteTaskId, setDeleteTaskId ] = useState<number | null>(null);
+  const [editCalculatedPay, setEditCalculatedPay] = useState<string>("0")
+
   const searchParams = useSearchParams()
   const contractId = searchParams.get("contractId")
   const freelancerId = searchParams.get("freelancerId")
@@ -81,60 +100,61 @@ export default function EmployerTasksPage() {
 
   const isAddTaskFormValid = () => {
     return (
-        newTask.taskName.trim() !== "" &&
-        newTask.taskInstruction.trim() !== "" &&
-        newTask.taskSubmission.trim() !== "" &&
-        newTask.taskHour.trim() !== "" &&
-        newTask.taskDueDate.trim() !== ""
-    );
-   };
+      newTask.taskName.trim() !== "" &&
+      newTask.taskInstruction.trim() !== "" &&
+      newTask.taskSubmission.trim() !== "" &&
+      newTask.taskHour.trim() !== "" &&
+      newTask.taskDueDate.trim() !== ""
+    )
+  }
 
-   const [contract, setContract] = useState<Contract | null>(null);
+  const [contract, setContract] = useState<Contract | null>(null)
 
-    useEffect(() => {
-    if (!contractId) return;
+  useEffect(() => {
+    if (!contractId) return
 
     const fetchContract = async () => {
-        try {
-        const res = await fetch(`${backendUrl}/api/tasks/get-end-date?contractId=${contractId}`);
-        if (!res.ok) throw new Error("Failed to fetch contract");
+      try {
+        const res = await fetch(`${backendUrl}/api/tasks/get-end-date?contractId=${contractId}`)
+        if (!res.ok) throw new Error("Failed to fetch contract")
 
-        const data: Contract = await res.json();
-        setContract(data);
-        console.log(data);
-        } catch (err) {
-        console.error(err);
-        toast.error("Failed to load contract details");
-        }
-    };
+        const data: Contract = await res.json()
+        setContract(data)
+        console.log(data)
+      } catch (err) {
+        console.error(err)
+        toast.error("Failed to load contract details")
+      }
+    }
 
-    fetchContract();
-    }, [contractId]);
+    fetchContract()
+  }, [contractId])
 
-    const isContractEnded = contract ? new Date() > new Date(contract.contractEndDate) : false;
+  const isContractEnded = contract ? new Date() > new Date(contract.contractEndDate) : false
 
-    // fetch all task from backend
-    useEffect(() => {
-        if (!employerId || !freelancerId || !contractId) return;
+  const [tasksWithFiles, setTasksWithFiles] = useState<TaskWithFilesDTO[]>([])
 
-        (async () => {
-            try {
-            const res = await fetch(
-                `${backendUrl}/api/tasks/employer-view?employerId=${employerId}&freelancerId=${freelancerId}&contractId=${contractId}`
-            );
-            if (!res.ok) throw new Error("Failed to fetch tasks");
+  useEffect(() => {
+    if (!employerId || !freelancerId || !contractId) return
 
-            const data: Task[] = await res.json();
-            setTasks(data);
+    const fetchTasks = async () => {
+      try {
+        const res = await fetch(
+          `${backendUrl}/api/tasks/get-task-file-data?employerId=${employerId}&freelancerId=${freelancerId}&contractId=${contractId}`,
+          { credentials: "include" },
+        )
+        if (!res.ok) throw new Error("Failed to fetch tasks")
 
-            console.log(data);
+        const data: TaskWithFilesDTO[] = await res.json()
+        setTasksWithFiles(data)
+        console.log("Fetched tasks with files:", data)
+      } catch (err) {
+        console.error(err)
+      }
+    }
 
-            } catch (err) {
-            console.error(err);
-            }
-        })();
-    }, [employerId, freelancerId, contractId]);
-   
+    fetchTasks()
+  }, [employerId, freelancerId, contractId])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -151,139 +171,313 @@ export default function EmployerTasksPage() {
     }
   }
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
 
-    const handleAddTask = async () => {
-        try {
-            const selectedDate = new Date(newTask.taskDueDate);
-            const now = new Date();
+  const handleAddTask = async () => {
+    try {
+      const selectedDate = new Date(newTask.taskDueDate)
+      const now = new Date()
 
-            if (selectedDate < now) {
-                toast.error("Due date cannot be in the past.");
-                return;
-            }
+      // Validate due date
+      if (selectedDate < now) {
+        toast.error("Due date cannot be in the past.")
+        return
+      }
 
-            // 2. Prepare payload
-            const taskPayload = {
-                taskName: newTask.taskName,
-                taskInstruction: newTask.taskInstruction,
-                taskSubmission: newTask.taskSubmission,
-                taskHour: newTask.taskHour,
-                taskDueDate: newTask.taskDueDate,
-                contractId: contractId || "",
-                freelancerId: freelancerId || "",
-                jobId: jobId || "",
-                employerId: employerId || "",
-                hourlyRate: hourlyRate || "",
-                taskTotalPay: calculatedPay || "0",
-            };
+      // Validate task hours
+      if (!newTask.taskHour || Number(newTask.taskHour) < 1) {
+        toast.error("Task hours must be at least 1.")
+        return
+      }
 
-            // 3. Send to backend
-            const res = await fetch(`${backendUrl}/api/tasks/create`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(taskPayload),
-            });
+      const taskPayload = {
+        taskName: newTask.taskName,
+        taskInstruction: newTask.taskInstruction,
+        taskSubmission: newTask.taskSubmission,
+        taskHour: newTask.taskHour,
+        taskDueDate: newTask.taskDueDate,
+        contractId: contractId || "",
+        freelancerId: freelancerId || "",
+        jobId: jobId || "",
+        employerId: employerId || "",
+        hourlyRate: hourlyRate || "",
+        taskTotalPay: calculatedPay || "0",
+      }
 
-            if (!res.ok) {
-                    const errorData = await res.json(); // backend should send { message: "..." }
-                    if (res.status === 400 && errorData?.message?.includes("Insufficient credits")) {
-                        toast.error("Insufficient Credits to Create Task, Please Top Up First");
-                        return;
-                    }
-                    throw new Error("Failed to create task");
-                }
+      const res = await fetch(`${backendUrl}/api/tasks/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(taskPayload),
+      })
 
-            const createdTask = await res.json();
-
-            // 4. Update state
-            setTasks([createdTask, ...tasks]);
-            setNewTask({
-                taskName: "",
-                taskInstruction: "",
-                taskSubmission: "",
-                taskHour: "",
-                taskDueDate: "",
-                contractId: "",
-            });
-            setCalculatedPay("0");
-            setShowAddForm(false);
-
-            toast.success("Task created successfully!");
-        } catch (err) {
-            console.error(err);
-            alert("Something went wrong while creating the task.");
+      if (!res.ok) {
+        const errorData = await res.json()
+        if (res.status === 400 && errorData?.message?.includes("Insufficient credits")) {
+          toast.error("Insufficient Credits to Create Task, Please Top Up First")
+          return
         }
-    };
+        toast.error("Insufficient Credits to Create Task, Please Top Up First")
+        return
+      }
 
+      const createdTask: Task = await res.json()
+      const newEntry: TaskWithFilesDTO = {
+        task: createdTask,
+        files: [],
+      }
 
-  const handleEditTask = (task: Task) => {
+      setTasksWithFiles((prev) => [newEntry, ...prev])
+
+      setNewTask({
+        taskName: "",
+        taskInstruction: "",
+        taskSubmission: "",
+        taskHour: "",
+        taskDueDate: "",
+        contractId: "",
+      })
+      setCalculatedPay("0")
+      setShowAddForm(false)
+
+      toast.success("Task created successfully!")
+    } catch (err) {
+      console.error(err)
+      alert("Something went wrong while creating the task.")
+    }
+  }
+
+  const handleEditTask = (task: Task | undefined) => {
+    if (!task) return
     setEditingTask(task.taskId)
+
+    const formatForInput = (dateStr: string) => {
+      const d = new Date(dateStr)
+      const offset = d.getTimezoneOffset() * 60000 // offset in ms
+      const local = new Date(d.getTime() - offset)
+      return local.toISOString().slice(0, 16)
+    }
+
+    const formattedDueDate = task.taskDueDate
+      ? formatForInput(task.taskDueDate)
+      : ""
+
+    const pay = Number(task.taskHour) * hourlyRate
+
     setEditingTaskData({
       taskName: task.taskName,
       taskInstruction: task.taskInstruction,
       taskSubmission: task.taskSubmission,
-      taskHour: task.taskHour,
-      taskDueDate: task.taskDueDate,
+      taskHour: task.taskHour.toString(),
+      taskDueDate: formattedDueDate,
+      taskTotalPay: pay.toString(),   
+      taskComment: task.taskComment || "",
     })
+
+    setEditCalculatedPay(pay.toString())
   }
 
-  const handleSaveEdit = (taskId: number) => {
-    setTasks(tasks.map((task) => (task.taskId === taskId ? { ...task, ...editingTaskData } : task)))
-    setEditingTask(null)
-    setEditingTaskData({})
+
+  const handleSaveEdit = async (taskId: number) => {
+    try {
+      const selectedDate = new Date(editingTaskData.taskDueDate || "")
+      const now = new Date()
+
+      if (selectedDate < now) {
+        toast.error("Due date cannot be in the past.")
+        return
+      }
+
+      if (!editingTaskData.taskHour || Number(editingTaskData.taskHour) < 1) {
+        toast.error("Task hours must be at least 1.")
+        return
+      }
+
+      // calculate total pay dynamically before sending
+      const pay = Number(editingTaskData.taskHour) * hourlyRate
+
+      const res = await fetch(`${backendUrl}/api/tasks/update/${taskId}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskName: editingTaskData.taskName,
+          taskInstruction: editingTaskData.taskInstruction,
+          taskSubmission: editingTaskData.taskSubmission,
+          taskHour: Number(editingTaskData.taskHour),   // convert string → number
+          taskDueDate: editingTaskData.taskDueDate,
+          taskTotalPay: pay.toString(),                 // always send string
+          employerId: employerId,
+          taskComment: editingTaskData.taskComment,
+        }),
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        if (res.status === 400 && errorData?.message?.includes("Insufficient credits")) {
+          toast.error("Insufficient Credits to Edit Task, Please Top Up First. Edit Failed")
+          return
+        }
+        toast.error(errorData?.message || "Failed to update task")
+        return
+      }
+
+      const updatedTask = await res.json()
+
+      setTasksWithFiles((prev) =>
+        prev.map((dto) =>
+          dto.task.taskId === taskId ? { ...dto, task: updatedTask } : dto,
+        ),
+      )
+
+      setEditingTask(null)
+      setEditingTaskData({})
+      toast.success("Task updated successfully!")
+    } catch (err) {
+      console.error("Error updating task:", err)
+      toast.error("Something went wrong while updating task")
+    }
   }
 
-  const handleDownloadFile = (fileName: string, url: string) => {
-    const link = document.createElement("a")
-    link.href = url
-    link.download = fileName
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+
+  const handleDownloadFile = (file?: FileEntry) => {
+    try {
+      if (!file) throw new Error("File not found")
+
+      const byteCharacters = atob(file.fileData)
+      const byteNumbers = new Array(byteCharacters.length)
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i)
+      }
+      const byteArray = new Uint8Array(byteNumbers)
+      const blob = new Blob([byteArray], { type: file.fileType })
+
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = file.fileName
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error("Error downloading file:", error)
+      toast.error("Failed to download file")
+    }
   }
 
-  const handleApprove = (taskId: number) => {
-    setTasks(tasks.map((task) => (task.taskId === taskId ? { ...task, taskStatus: "approved" as const } : task)))
+  const handleApproveTask = async (approveTaskId: number) => {
+    try {
+      const res = await fetch(`${backendUrl}/api/tasks/approve/${approveTaskId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          contractId: contractId,
+          employerId: employerId,
+          freelancerId: freelancerId,
+        }),
+      })
+
+      if (!res.ok) throw new Error("Failed to release payment")
+
+      toast.success("Processing Payment Please Wait...!")
+
+      setTimeout(() => {
+        window.location.reload()
+      }, 3000)
+
+    } catch (err) {
+      console.error(err)
+      toast.error("Failed to initiate payment. Please Contact Customer Support.")
+    }
   }
 
-  const handleReject = (taskId: number, reason: string) => {
-    setTasks(
-      tasks.map((task) =>
-        task.taskId === taskId ? { ...task, taskStatus: "rejected" as const, rejectReason: reason } : task,
-      ),
-    )
-    setShowRejectDialog(false)
-    setRejectingTaskId(null)
-    setRejectReason("")
-  }
+  const handleReject = async (taskId: number, reason: string) => {
+    try {
+      const res = await fetch(`${backendUrl}/api/tasks/reject/${rejectingTaskId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ reason }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to reject task");
+      }
+
+      const updatedTask = await res.json();
+
+      setTasksWithFiles((prev) =>
+        prev.map((dto) =>
+          dto.task.taskId === updatedTask.taskId
+            ? { ...dto, task: updatedTask }
+            : dto
+        )
+      );
+
+      toast.success("Task rejected and refund processed");
+      setShowRejectDialog(false);
+      setRejectingTaskId(null);
+      setRejectReason("");
+    } catch (error) {
+      console.error(error);
+      toast.error("Something went wrong rejecting the task");
+    }
+  };
 
   const openRejectDialog = (taskId: number) => {
     setRejectingTaskId(taskId)
     setShowRejectDialog(true)
   }
 
-  const updateTaskComment = (taskId: number, comment: string) => {
-    setTasks(tasks.map((task) => (task.taskId === taskId ? { ...task, taskComment: comment } : task)))
-  }
+
+  const handleDeleteTask = async (taskId: number) => {
+    if (!taskId) return;
+    try {
+      const res = await fetch(`${backendUrl}/api/tasks/delete/${deleteTaskId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to delete task");
+      }
+
+      setTasksWithFiles((prev) => prev.filter((dto) => dto.task.taskId !== taskId));
+
+      toast.success("Task deleted and refund processed successfully");
+
+      setDeleteTaskId(null);
+
+      setShowDeleteDialog(false);
+
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete task");
+    }
+  };
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6 p-6 min-w-3xl">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">Task</h1>
         <div className="flex gap-3">
+          {isContractEnded && (
+            <Button
+              onClick={() => setShowCompleteContract(true)}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              Complete Contract
+            </Button>
+          )}
 
-            {isContractEnded && (
-                <Button
-                onClick={() => setShowCompleteContract(true)}
-                className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                Complete Contract
-                </Button>
-            )}
-
-
-          <Button onClick={() => setShowAddForm(true)} className="bg-black hover:bg-gray-800 text-white" disabled={isContractEnded}>
+          <Button
+            onClick={() => setShowAddForm(true)}
+            className="bg-black hover:bg-gray-800 text-white"
+            disabled={isContractEnded}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Add New Task
           </Button>
@@ -302,7 +496,9 @@ export default function EmployerTasksPage() {
             <h3 className="text-xl font-bold mb-4">Add New Task</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="taskName" className="mb-2">Task Name</Label>
+                <Label htmlFor="taskName" className="mb-2">
+                  Task Name
+                </Label>
                 <Input
                   id="taskName"
                   value={newTask.taskName}
@@ -311,23 +507,27 @@ export default function EmployerTasksPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="taskHour" className="mb-2">Task Hours</Label>
-                    <Input
-                    id="taskHour"
-                    type="number"
-                    value={newTask.taskHour}
-                    onChange={(e) => {
-                        const hours = Number(e.target.value)
-                        setNewTask({ ...newTask, taskHour: e.target.value })
+                <Label htmlFor="taskHour" className="mb-2">
+                  Task Hours
+                </Label>
+                <Input
+                  id="taskHour"
+                  type="number"
+                  value={newTask.taskHour}
+                  onChange={(e) => {
+                    const hours = Number(e.target.value)
+                    setNewTask({ ...newTask, taskHour: e.target.value })
 
-                        const pay = hours * hourlyRate
-                        setCalculatedPay(pay.toString())
-                    }}
-                    placeholder="Hours required"
-                    />
+                    const pay = hours * hourlyRate
+                    setCalculatedPay(pay.toString())
+                  }}
+                  placeholder="Hours required"
+                />
               </div>
               <div className="md:col-span-2">
-                <Label htmlFor="taskInstruction" className="mb-2">Task Instructions</Label>
+                <Label htmlFor="taskInstruction" className="mb-2">
+                  Task Instructions
+                </Label>
                 <Textarea
                   id="taskInstruction"
                   value={newTask.taskInstruction}
@@ -337,7 +537,9 @@ export default function EmployerTasksPage() {
                 />
               </div>
               <div className="md:col-span-2">
-                <Label htmlFor="taskSubmission" className="mb-2">Submission Requirements</Label>
+                <Label htmlFor="taskSubmission" className="mb-2">
+                  Submission Requirements
+                </Label>
                 <Textarea
                   id="taskSubmission"
                   value={newTask.taskSubmission}
@@ -347,7 +549,9 @@ export default function EmployerTasksPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="taskDueDate" className="mb-2">Due Date</Label>
+                <Label htmlFor="taskDueDate" className="mb-2">
+                  Due Date
+                </Label>
                 <Input
                   id="taskDueDate"
                   type="datetime-local"
@@ -358,14 +562,15 @@ export default function EmployerTasksPage() {
 
               <div>
                 <Label className="mb-2">Total Balance Required</Label>
-                <p className="text-lg font-semibold text-blue-700">
-                    ${calculatedPay}
-                </p>
+                <p className="text-lg font-semibold text-blue-700">${calculatedPay}</p>
               </div>
-
             </div>
             <div className="flex gap-3 mt-4">
-              <Button onClick={handleAddTask} className="bg-black hover:bg-gray-800 text-white" disabled={!isAddTaskFormValid()}>
+              <Button
+                onClick={handleAddTask}
+                className="bg-black hover:bg-gray-800 text-white"
+                disabled={!isAddTaskFormValid()}
+              >
                 Create Task
               </Button>
               <Button variant="outline" onClick={() => setShowAddForm(false)}>
@@ -378,231 +583,343 @@ export default function EmployerTasksPage() {
 
       {/* Tasks List */}
       <div className="space-y-4">
-        {tasks.map((task) => (
-          <Card key={task.taskId} className="border border-gray-200">
-            <CardContent className="p-6 ">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-xl font-bold text-gray-900">{task.taskName}</h3>
-                    <Badge className={getStatusColor(task.taskStatus)}>{task.taskStatus.toUpperCase()}</Badge>
+        {tasksWithFiles
+        .filter(dto => dto?.task)
+        .map((taskWithFiles) => {
+          const task = taskWithFiles.task
+          const files = taskWithFiles.files
+
+          return (
+            <Card key={task.taskId} className="border border-gray-200">
+              <CardContent className="p-6 ">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-xl font-bold text-gray-900">{task.taskName}</h3>
+                      <Badge className={getStatusColor(task.taskStatus)}>{task.taskStatus.toUpperCase()}</Badge>
+                    </div>
+                    <p className="text-gray-600 mb-2">Contract ID: {task.contractId}</p>
                   </div>
-                  <p className="text-gray-600 mb-2">Contract ID: {task.contractId}</p>
-                </div>
-                {(task.taskStatus === "pending" || task.taskStatus === "submitted") && (
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => (editingTask === task.taskId ? handleSaveEdit(task.taskId) : handleEditTask(task))}
-                    >
-                      <Edit className="w-4 h-4 mr-1" />
-                      {editingTask === task.taskId ? "Save" : "Edit"}
-                    </Button>
-                    {editingTask === task.taskId && (
+
+                  {(task.taskStatus === "pending" ) && ( 
+                    <div className="flex gap-2 cursor-pointer">
+                      <Button
+                          variant="outline"
+                          size="sm"
+                          className="mr-3"
+                          onClick={() => {
+                            setDeleteTaskId(task.taskId);
+                            setShowDeleteDialog(true);
+                          }}
+                      >
+                          <Delete className="w-4 h-4 mr-1" />
+                          Delete
+                      </Button>
+                    </div>
+                  )}
+
+                  {(task.taskStatus === "pending" || task.taskStatus === "submitted") && (
+                    <div className="flex gap-2 cursor-pointer">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          setEditingTask(null)
-                          setEditingTaskData({})
-                        }}
+                        onClick={() =>
+                          editingTask === task.taskId ? handleSaveEdit(task.taskId) : handleEditTask(task)
+                        }
                       >
-                        Cancel
+                        <Edit className="w-4 h-4 mr-1" />
+                        {editingTask === task.taskId ? "Save" : "Edit"}
                       </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Task Details */}
-                <div className="lg:col-span-2 space-y-4">
-                  <div>
-                    <Label className="font-semibold mb-2">Task Name</Label>
-                    {editingTask === task.taskId ? (
-                      <Input
-                        value={editingTaskData.taskName || ""}
-                        onChange={(e) => setEditingTaskData({ ...editingTaskData, taskName: e.target.value })}
-                        className="mt-1"
-                      />
-                    ) : (
-                      <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{task.taskName}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label className="font-semibold mb-2">Instructions</Label>
-                    {editingTask === task.taskId ? (
-                      <Textarea
-                        value={editingTaskData.taskInstruction || ""}
-                        onChange={(e) => setEditingTaskData({ ...editingTaskData, taskInstruction: e.target.value })}
-                        rows={3}
-                        className="mt-1"
-                      />
-                    ) : (
-                      <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{task.taskInstruction}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label className="font-semibold mb-2">Submission Requirements</Label>
-                    {editingTask === task.taskId ? (
-                      <Textarea
-                        value={editingTaskData.taskSubmission || ""}
-                        onChange={(e) => setEditingTaskData({ ...editingTaskData, taskSubmission: e.target.value })}
-                        rows={2}
-                        className="mt-1"
-                      />
-                    ) : (
-                      <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{task.taskSubmission}</p>
-                    )}
-                  </div>
-
-                  {/* Submitted Files Section */}
-                  {task.submittedFiles && task.submittedFiles.length > 0 && (
-                    <div>
-                      <Label className="font-semibold">Submitted Files</Label>
-                      <div className="space-y-2 mt-2">
-                        {task.submittedFiles.map((file, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200"
-                          >
-                            <div className="flex items-center gap-2">
-                              <FileText className="h-4 w-4 text-blue-600" />
-                              <span className="text-sm font-medium text-blue-900">{file.name}</span>
-                              <span className="text-xs text-blue-600">({file.size} MB)</span>
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDownloadFile(file.name, file.url)}
-                              className="text-blue-600 border-blue-200 hover:bg-blue-100"
-                            >
-                              Download
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Freelancer's Submission Note */}
-                  {task.taskSubmissionNote && (
-                    <div>
-                      <Label className="font-semibold mb-2">Freelancer's Note</Label>
-                      <p className="text-gray-700 bg-green-50 p-3 rounded-lg border border-green-200">
-                        {task.taskSubmissionNote}
-                      </p>
+                      {editingTask === task.taskId && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingTask(null)
+                            setEditingTaskData({})
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
 
-                {/* Task Info & Actions */}
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4 text-sm">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Task Details */}
+                  <div className="lg:col-span-2 space-y-4">
                     <div>
-                      <Label className="font-semibold mb-2">Hours</Label>
+                      <Label className="font-semibold mb-2">Task Name</Label>
                       {editingTask === task.taskId ? (
                         <Input
-                          type="number"
-                          value={editingTaskData.taskHour || ""}
-                          onChange={(e) => setEditingTaskData({ ...editingTaskData, taskHour: e.target.value })}
+                          value={editingTaskData.taskName || ""}
+                          onChange={(e) => setEditingTaskData({ ...editingTaskData, taskName: e.target.value })}
                           className="mt-1"
                         />
                       ) : (
-                        <p className="text-gray-700">{task.taskHour} hours</p>
+                        <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{task.taskName}</p>
                       )}
                     </div>
                     <div>
-                      <Label className="font-semibold mb-2">Total Pay</Label>
-                      <p className="text-gray-700">${ (Number(task.taskTotalPay) / 100).toFixed(2) }</p>
+                      <Label className="font-semibold mb-2">Instructions</Label>
+                      {editingTask === task.taskId ? (
+                        <Textarea
+                          value={editingTaskData.taskInstruction || ""}
+                          onChange={(e) => setEditingTaskData({ ...editingTaskData, taskInstruction: e.target.value })}
+                                rows={3}
+                        /> 
+                      ) : (
+                        <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{task.taskInstruction}</p>
+                      )}
                     </div>
                     <div>
-                      <Label className="font-semibold mb-2">Due Date</Label>
+                      <Label className="font-semibold mb-2">Submission Requirements</Label>
                       {editingTask === task.taskId ? (
-                        <Input
-                          type="date"
-                          value={editingTaskData.taskDueDate || ""}
-                          onChange={(e) => setEditingTaskData({ ...editingTaskData, taskDueDate: e.target.value })}
+                        <Textarea
+                          value={editingTaskData.taskSubmission || ""}
+                          onChange={(e) => setEditingTaskData({ ...editingTaskData, taskSubmission: e.target.value })}
+                          rows={2}
                           className="mt-1"
                         />
                       ) : (
-                        <p className="text-gray-700">{formatDate(task.taskDueDate)}</p>
+                        <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{task.taskSubmission}</p>
                       )}
                     </div>
-                    <div>
-                      <Label className="font-semibold mb-2">Created</Label>
-                      <p className="text-gray-700">{formatDate(task.taskCreationDate)}</p>
-                    </div>
+
+                    {(task.taskStatus === "submitted" ||
+                      task.taskStatus === "approved" ||
+                      task.taskStatus === "rejected") &&
+                      files &&
+                      files.length > 0 && (
+                        <div>
+                          <Label className="font-semibold">Submitted Files</Label>
+                          <div className="space-y-2 mt-2">
+                            {files.map((file, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <FileText className="h-4 w-4 text-blue-600" />
+                                  <span className="text-sm font-medium text-blue-900">{file.fileName}</span>
+                                  <span className="text-xs text-blue-600">
+                                    ({(file.fileSize / (1024 * 1024)).toFixed(2)} MB)
+                                  </span>
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDownloadFile(file)}
+                                  className="text-blue-600 border-blue-200 hover:bg-blue-100"
+                                >
+                                  <Download className="h-4 w-4 mr-1" />
+                                  Download
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                    {/* Freelancer's Submission Note */}
+                    {task.taskSubmissionNote && (
+                      <div>
+                        <Label className="font-semibold mb-2">Freelancer's Note</Label>
+                        <p className="text-gray-700 bg-green-50 p-3 rounded-lg border border-green-200 mb-2">
+                          {task.taskSubmissionNote}
+                        </p>
+
+                      {task.taskStatus === "rejected" && (
+                        <div className="mt-2">
+                        <Label className="font-semibold mb-2">Reject Reason</Label>
+                        <p className="text-gray-700 bg-red-50 p-3 rounded-lg border border-red-200">
+                          {task.rejectReason}
+                        </p>
+                        </div>
+                      )}
+                      </div>
+
+                    )}
                   </div>
 
-                  {/* Comment Section */}
-                  <div>
-                    <Label className="font-semibold mb-2">Your Comment</Label>
-                    {task.taskStatus === "pending" && editingTask === task.taskId ? (
-                      <Textarea
-                        value={task.taskComment}
-                        onChange={(e) => updateTaskComment(task.taskId, e.target.value)}
-                        placeholder="Add your comment for the freelancer..."
-                        rows={2}
-                        className="mt-1"
-                      />
-                    ) : task.taskStatus === "submitted" && editingTask === task.taskId ? (
-                      <Textarea
-                        value={task.taskComment}
-                        onChange={(e) => updateTaskComment(task.taskId, e.target.value)}
-                        placeholder="Add your comment for the freelancer..."
-                        rows={2}
-                        className="mt-1"
-                      />
-                    ) : (
-                      <div className="space-y-2">
-                        <p className="text-gray-700 bg-gray-50 p-3 rounded-lg min-h-[60px]">
-                          {task.taskComment || "No comment added yet"}
-                        </p>
-                        {(task.taskStatus === "approved" || task.taskStatus === "rejected") && (
-                          <p className="text-xs text-gray-500">
-                            Comments cannot be edited after task is {task.taskStatus}
+                  {/* Task Info & Actions */}
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4 text-sm">
+                      <div>
+                        <Label className="font-semibold mb-2">Hours</Label>
+                        {editingTask === task.taskId ? (
+                          <Input
+                            type="number"
+                            value={editingTaskData.taskHour || ""}
+                            onChange={(e) => {
+                              const hours = Number(e.target.value)
+                              const pay = hours * hourlyRate
+                              setEditingTaskData({
+                                ...editingTaskData,
+                                taskHour: e.target.value,
+                                taskTotalPay: pay.toString(),   
+                              })
+                              setEditCalculatedPay(pay.toString())
+                            }}
+                            className="mt-1"
+                          />
+                        ) : (
+                          <p className="text-gray-700">{task.taskHour} hours</p>
+                        )}
+                      </div>
+                      <div>
+                      <Label className="font-semibold mb-2">Total Pay</Label>
+                        {editingTask === task.taskId ? (
+                          <p className="text-blue-700 font-semibold">
+                            ${editCalculatedPay}
+                          </p>
+                        ) : (
+                          <p className="text-gray-700">
+                            ${(Number(task.taskTotalPay) / 100).toFixed(2)}
                           </p>
                         )}
                       </div>
-                    )}
-                  </div>
-
-                  {/* Action Buttons */}
-                  {task.taskStatus === "submitted" && (
-                    <div className="space-y-3">
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => handleApprove(task.taskId)}
-                          className="bg-green-600 hover:bg-green-700 text-white flex-1"
-                        >
-                          <Check className="w-4 h-4 mr-1" />
-                          Approve
-                        </Button>
-                        <Button variant="destructive" onClick={() => openRejectDialog(task.taskId)} className="flex-1">
-                          <X className="w-4 h-4 mr-1" />
-                          Reject
-                        </Button>
+                      <div>
+                        <Label className="font-semibold mb-2">Due Date</Label>
+                        {editingTask === task.taskId ? (
+                          <Input
+                            type="datetime-local"
+                            value={editingTaskData.taskDueDate || ""}
+                            onChange={(e) => setEditingTaskData({ ...editingTaskData, taskDueDate: e.target.value })}
+                            className="mt-1"
+                          />
+                        ) : (
+                          <p className="text-gray-700">{formatDate(task.taskDueDate)}</p>
+                        )}
                       </div>
-                      <div className="space-y-2">
-                        <Button variant="outline" className="w-full border border-gray-200 bg-white hover:bg-gray-50">
-                          <MessageCircle className="w-4 h-4 mr-2" />
-                          Chat with Freelancer
-                        </Button>
-                        <p className="text-xs text-gray-600 text-center">
-                          💡 Consider to contact freelancer to edit their submission if you're dissatisfied before
-                          rejecting
-                        </p>
+                      <div>
+                        <Label className="font-semibold mb-2">Created</Label>
+                        <p className="text-gray-700">{formatDate(task.taskCreationDate)}</p>
                       </div>
                     </div>
-                  )}
+
+                    {/* Comment Section */}
+                    <div>
+                      <Label className="font-semibold mb-2">Your Comment</Label>
+                      {task.taskStatus === "pending" && editingTask === task.taskId ? (
+                        <Textarea
+                          value={editingTaskData.taskComment || ""}
+                          onChange={(e) => setEditingTaskData((prev) => ({ ...prev, taskComment: e.target.value }))}
+                          placeholder="Add your comment for the freelancer..."
+                          rows={2}
+                          className="mt-1"
+                        />
+                      ) : task.taskStatus === "submitted" && editingTask === task.taskId ? (
+                        <Textarea
+                          value={editingTaskData.taskComment || ""}
+                          onChange={(e) => setEditingTaskData((prev) => ({ ...prev, taskComment: e.target.value }))}
+                          placeholder="Add your comment for the freelancer..."
+                          rows={2}
+                          className="mt-1"
+                        />
+                      ) : (
+                        <div className="space-y-2">
+                          <p className="text-gray-700 bg-gray-50 p-3 rounded-lg min-h-[60px]">
+                            {task.taskComment || "No comment added yet"}
+                          </p>
+                          {(task.taskStatus === "approved" || task.taskStatus === "rejected") && (
+                            <p className="text-xs text-gray-500">
+                              Comments cannot be edited after task is {task.taskStatus}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    {task.taskStatus === "submitted" && (
+                      <div className="space-y-3">
+                        <div className="flex gap-2">
+                          {editingTask !== task.taskId ? (
+                            <>
+                              <Button
+                                onClick={() => {
+                                  setApproveTaskId(task.taskId)
+                                  setApproveTaskDialog(true)
+                                }}
+                                className="bg-green-600 hover:bg-green-700 text-white flex-1"
+                              >
+                                <Check className="w-4 h-4 mr-1" />
+                                Approve
+                              </Button>
+
+                              <Button
+                                variant="destructive"
+                                onClick={() => {
+                                  setEditingTask(null)
+                                  openRejectDialog(task.taskId)
+                                }}
+                                className="flex-1"
+                              >
+                                <X className="w-4 h-4 mr-1" />
+                                Reject
+                              </Button>
+                            </>
+                          ) : null}
+                        </div>
+                        <div className="space-y-2">
+                          <Link href={`/dashboard/employer/chat?userId=${freelancerId}`} target="_blank" rel="noopener noreferrer">
+                            <Button variant="outline" className="w-full border border-gray-200 bg-white hover:bg-gray-50">
+                              <MessageCircle className="w-4 h-4 mr-2" />
+                              Chat with Freelancer
+                            </Button>
+                          </Link>
+
+                          <p className="text-xs text-gray-600 text-center mt-2">
+                            💡 Consider to contact freelancer to edit their submission if you're dissatisfied before
+                            rejecting
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+
+
+      {approveTaskDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Approve Task</h3>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="approve-reason" className="mb-2">Approve this task and release payment to the freelancer?</Label>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              <div className="flex gap-3 mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setApproveTaskDialog(false)
+                    setApproveTaskId(null)
+                  }}
+                  className="flex-1 cursor-pointer"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => handleApproveTask(approveTaskId!)}
+                  className="flex-1 cursor-pointer"
+                >
+                  Approve Task
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reject Task Dialog */}
       {showRejectDialog && (
@@ -612,12 +929,12 @@ export default function EmployerTasksPage() {
               <h3 className="text-xl font-bold text-gray-900 mb-4">Reject Task</h3>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="reject-reason">Reason for Rejection</Label>
+                  <Label htmlFor="reject-reason" className="mb-2">Reason for Rejection</Label>
                   <Textarea
                     id="reject-reason"
                     value={rejectReason}
                     onChange={(e) => setRejectReason(e.target.value)}
-                    placeholder="Please explain what needs to be changed or improved..."
+                    placeholder="Please specify the reason to reject this tasks."
                     rows={4}
                     className="mt-1"
                   />
@@ -648,6 +965,32 @@ export default function EmployerTasksPage() {
           </div>
         </div>
       )}
+
+      {/* Deleting Task Dialog */}
+      <AlertDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this task? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowDeleteDialog(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => handleDeleteTask(deleteTaskId!)}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              Delete Task
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Complete Contract Dialog */}
       {showCompleteContract && (
