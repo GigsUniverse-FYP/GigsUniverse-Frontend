@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, Edit, Check, X, XCircle, FileText, MessageCircle, Download, Delete } from "lucide-react"
+import { Plus, Edit, Check, X, XCircle, FileText, MessageCircle, Download, Delete, Star } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { toast } from "react-toastify"
 import Link from "next/link"
@@ -65,6 +65,14 @@ export const formatDate = (isoDate: string | undefined | null) => {
 }
 
 export default function EmployerTasksPage() {
+
+  // rating section
+  const [rating, setRating] = useState(0)
+  const [hoveredRating, setHoveredRating] = useState(0)
+  const [feedback, setFeedback] = useState("")
+
+
+
   const [calculatedPay, setCalculatedPay] = useState("0")
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingTask, setEditingTask] = useState<number | null>(null)
@@ -131,6 +139,33 @@ export default function EmployerTasksPage() {
   }, [contractId])
 
   const isContractEnded = contract ? new Date() > new Date(contract.contractEndDate) : false
+  const [isCompletedOrCancelled, setIsCompletedOrCancelled] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch(`${backendUrl}/api/contracts/checkstatus/${contractId}`, {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch contract status");
+        }
+
+        const data: boolean = await res.json();
+        setIsCompletedOrCancelled(data);
+      } catch (error) {
+        console.error("Error fetching contract status:", error);
+        setIsCompletedOrCancelled(null);
+      }
+    };
+    if (contractId) {
+      fetchStatus();
+    }
+  }, [contractId]);
+
+
 
   const [tasksWithFiles, setTasksWithFiles] = useState<TaskWithFilesDTO[]>([])
 
@@ -156,6 +191,47 @@ export default function EmployerTasksPage() {
     fetchTasks()
   }, [employerId, freelancerId, contractId])
 
+
+  const hasIncompleteTasks = (tasks: Task[]): boolean => {
+    return tasks.some(task => task.taskStatus === "pending" || task.taskStatus === "submitted");
+  };
+
+
+  const handleCompleteContract = async () => {
+    if (!contractId || !contract) return;
+
+    try {
+      const res = await fetch(`${backendUrl}/api/contracts/complete/${contractId}`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rating,                    
+          feedback,               
+          employerId: employerId, 
+          freelancerId: freelancerId,
+          jobId: jobId,
+          contractId: contractId                
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to complete contract");
+
+      toast.success("Contract completed successfully");
+      setShowCompleteContract(false);
+      setRating(0);
+      setFeedback("");
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to complete contract");
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
@@ -172,6 +248,33 @@ export default function EmployerTasksPage() {
   }
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
+
+  const [ isCancelled, setIsCancelled ] = useState(false)
+  
+     useEffect(() => {
+      const fetchCancellationStatus = async () => {
+        try {
+          const res = await fetch(`${backendUrl}/api/contracts/cancel-reason/${contractId}`, {
+            method: "GET",
+            credentials: "include",
+          })
+  
+          if (!res.ok) {
+            throw new Error("Failed to check cancellation reason")
+          }
+          const data = await res.json()
+  
+          setIsCancelled(data.exists)
+  
+        } catch (error) {
+          console.error(error)
+        } 
+      }
+  
+      if (contractId) {
+        fetchCancellationStatus()
+      }
+    }, [contractId, backendUrl])
 
   const handleAddTask = async () => {
     try {
@@ -432,7 +535,6 @@ export default function EmployerTasksPage() {
     setShowRejectDialog(true)
   }
 
-
   const handleDeleteTask = async (taskId: number) => {
     if (!taskId) return;
     try {
@@ -459,6 +561,25 @@ export default function EmployerTasksPage() {
     }
   };
 
+  const handleCancelContract = async () => {
+    try {
+      const res = await fetch(`${backendUrl}/api/contracts/cancel/${contractId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ reason: cancellationReason }),
+      });
+
+      if (!res.ok) throw new Error("Failed to cancel contract");
+
+      toast.success("Request for Contract Cancellation is Submitted.");
+      setShowCancelContract(false);
+    } catch (error) {
+      console.error("Error cancelling contract:", error);
+      toast.error("Failed to Upload Cancellation Reason.");
+    }
+  };
+
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6 p-6 min-w-3xl">
       <div className="flex justify-between items-center">
@@ -466,7 +587,14 @@ export default function EmployerTasksPage() {
         <div className="flex gap-3">
           {isContractEnded && (
             <Button
-              onClick={() => setShowCompleteContract(true)}
+              onClick={() => {
+                if (hasIncompleteTasks(tasksWithFiles.map(dto => dto.task))) {
+                  toast.error("Please approve, reject or delete all pending or submitted tasks before completing the contract.");
+                  return;
+                }
+                setShowCompleteContract(true);
+              }}
+              disabled={isCompletedOrCancelled === true}
               className="bg-green-600 hover:bg-green-700 text-white"
             >
               Complete Contract
@@ -476,13 +604,13 @@ export default function EmployerTasksPage() {
           <Button
             onClick={() => setShowAddForm(true)}
             className="bg-black hover:bg-gray-800 text-white"
-            disabled={isContractEnded}
+            disabled={isContractEnded || isCompletedOrCancelled === true}
           >
             <Plus className="w-4 h-4 mr-2" />
             Add New Task
           </Button>
 
-          <Button variant="destructive" onClick={() => setShowCancelContract(true)} disabled={isContractEnded}>
+          <Button variant="destructive" onClick={() => setShowCancelContract(true)} disabled={isContractEnded || isCompletedOrCancelled || isCancelled}>
             <XCircle className="w-4 h-4 mr-2" />
             Cancel Contract
           </Button>
@@ -596,7 +724,15 @@ export default function EmployerTasksPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-xl font-bold text-gray-900">{task.taskName}</h3>
-                      <Badge className={getStatusColor(task.taskStatus)}>{task.taskStatus.toUpperCase()}</Badge>
+                      <Badge className={getStatusColor(task.taskStatus)}>
+                        {((task.taskStatus === "pending" && new Date() > new Date(task.taskDueDate)) ||
+                          (task.taskStatus === "submitted" &&
+                            task.taskSubmission &&
+                            task.taskSubmissionDate &&
+                            new Date(task.taskSubmissionDate) > new Date(task.taskDueDate)))
+                          ? "OVERDUE"
+                          : task.taskStatus.toUpperCase()}
+                      </Badge>
                     </div>
                     <p className="text-gray-600 mb-2">Contract ID: {task.contractId}</p>
                   </div>
@@ -997,26 +1133,75 @@ export default function EmployerTasksPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
             <div className="p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Complete Contract</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Rate Your Experience</h3>
               <div className="space-y-4">
-                <p className="text-gray-600">
-                  Are you sure you want to mark this contract as complete? This action cannot be undone.
-                </p>
                 <div>
-                  <Label htmlFor="completion-notes">Final Notes (Optional)</Label>
+                  <Label className="text-gray-700 mb-2 block">How would you rate the freelancer?</Label>
+                  <div className="flex gap-1 mb-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        className="p-1 transition-colors"
+                        onMouseEnter={() => setHoveredRating(star)}
+                        onMouseLeave={() => setHoveredRating(0)}
+                        onClick={() => setRating(star)}
+                      >
+                        <Star
+                          className={`w-8 h-8 ${
+                            star <= (hoveredRating || rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+                          } transition-colors`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    {rating > 0 && (
+                      <>
+                        {rating === 1 && "Poor"}
+                        {rating === 2 && "Fair"}
+                        {rating === 3 && "Good"}
+                        {rating === 4 && "Very Good"}
+                        {rating === 5 && "Excellent"}
+                      </>
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="feedback" className="mb-2">Your Feedback (Min 10 words.) </Label>
                   <Textarea
-                    id="completion-notes"
-                    placeholder="Add any final comments about the completed work..."
+                    id="feedback"
+                    placeholder="Tell us about your experience..."
                     rows={3}
                     className="mt-1"
+                    value={feedback}
+                    onChange={(e) => setFeedback(e.target.value)}
                   />
                 </div>
               </div>
               <div className="flex gap-3 mt-6">
-                <Button variant="outline" onClick={() => setShowCompleteContract(false)} className="flex-1">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowCompleteContract(false)
+                    setRating(0)
+                    setFeedback("")
+                  }}
+                  className="flex-1"
+                >
                   Cancel
                 </Button>
-                <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white">Complete Contract</Button>
+                <Button
+                  onClick={handleCompleteContract}
+                  disabled={
+                    rating === 0 ||
+                    feedback.trim() === "" ||
+                    feedback.trim().split(/\s+/).length < 10
+                  }
+                  className="flex-1 bg-black hover:bg-gray-700 text-white disabled:bg-gray-300"
+                >
+                  Submit Rating
+                </Button>
               </div>
             </div>
           </div>
@@ -1031,10 +1216,10 @@ export default function EmployerTasksPage() {
               <h3 className="text-xl font-bold text-gray-900 mb-4">Cancel Contract</h3>
               <div className="space-y-4">
                 <p className="text-gray-600">
-                  Are you sure you want to cancel this contract? This action cannot be undone.
+                  Please provide a valid reason to cancel this contract. Our Support Team will reach out with you within 24 hours.
                 </p>
                 <div>
-                  <Label htmlFor="cancellation-reason">Reason for Cancellation *</Label>
+                  <Label htmlFor="cancellation-reason" className="mb-2">Reason for Cancellation *</Label>
                   <Textarea
                     id="cancellation-reason"
                     value={cancellationReason}
@@ -1059,8 +1244,7 @@ export default function EmployerTasksPage() {
                 <Button
                   variant="destructive"
                   onClick={() => {
-                    // Handle contract cancellation logic here
-                    console.log("Contract cancelled with reason:", cancellationReason)
+                    handleCancelContract()
                     setShowCancelContract(false)
                     setCancellationReason("")
                   }}

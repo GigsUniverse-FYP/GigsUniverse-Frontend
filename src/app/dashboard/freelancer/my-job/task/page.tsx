@@ -24,6 +24,7 @@ interface Task {
   taskDueDate: string
   taskCreationDate: string
   contractId: string
+  taskSubmissionDate?: string
 }
 
 interface Contract {
@@ -64,6 +65,7 @@ export default function FreelancerTasksPage() {
   const [submissionNotes, setSubmissionNotes] = useState<{ [key: number]: string }>({})
   const [editingSubmission, setEditingSubmission] = useState<number | null>(null)
   const [removedBackendFiles, setRemovedBackendFiles] = useState<{ [key: number]: number[] }>({})
+  const [cancellationReason, setCancellationReason] = useState("")
 
   const searchParams = useSearchParams()
   const contractId = searchParams.get("contractId")
@@ -89,7 +91,53 @@ export default function FreelancerTasksPage() {
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
 
+  const [ isCancelled, setIsCancelled ] = useState(false)
+
+   useEffect(() => {
+    const fetchCancellationStatus = async () => {
+      try {
+        const res = await fetch(`${backendUrl}/api/contracts/cancel-reason/${contractId}`, {
+          method: "GET",
+          credentials: "include",
+        })
+
+        if (!res.ok) {
+          throw new Error("Failed to check cancellation reason")
+        }
+        const data = await res.json()
+
+        setIsCancelled(data.exists)
+
+      } catch (error) {
+        console.error(error)
+      } 
+    }
+
+    if (contractId) {
+      fetchCancellationStatus()
+    }
+  }, [contractId, backendUrl])
+
   const [contract, setContract] = useState<Contract | null>(null)
+
+  const handleCancelContract = async () => {
+    try {
+      const res = await fetch(`${backendUrl}/api/contracts/cancel/${contractId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ reason: cancellationReason }),
+      });
+
+      if (!res.ok) throw new Error("Failed to cancel contract");
+
+      toast.success("Request for Contract Cancellation is Submitted.");
+      setShowCancelContract(false);
+    } catch (error) {
+      console.error("Error cancelling contract:", error);
+      toast.error("Failed to Upload Cancellation Reason.");
+    }
+  };
 
   useEffect(() => {
     if (!contractId) return
@@ -310,7 +358,7 @@ export default function FreelancerTasksPage() {
               Chat with Employer
             </Button>
           </Link>
-          <Button variant="destructive" onClick={() => setShowCancelContract(true)} disabled={isContractEnded}>
+          <Button variant="destructive" onClick={() => setShowCancelContract(true)} disabled={isContractEnded || isCancelled}>
             <XCircle className="w-4 h-4 mr-2" />
             Cancel Contract
           </Button>
@@ -324,10 +372,18 @@ export default function FreelancerTasksPage() {
             <CardContent className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-xl font-bold text-gray-900">{task.taskName}</h3>
-                    <Badge className={getStatusColor(task.taskStatus)}>{task.taskStatus.toUpperCase()}</Badge>
-                  </div>
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="text-xl font-bold text-gray-900">{task.taskName}</h3>
+                  <Badge className={getStatusColor(task.taskStatus)}>
+                    {((task.taskStatus === "pending" && new Date() > new Date(task.taskDueDate)) ||
+                      (task.taskStatus === "submitted" &&
+                        task.taskSubmission &&
+                        task.taskSubmissionDate &&
+                        new Date(task.taskSubmissionDate) > new Date(task.taskDueDate)))
+                      ? "OVERDUE"
+                      : task.taskStatus.toUpperCase()}
+                  </Badge>
+                </div>
                   <p className="text-gray-600 mb-2">Contract ID: {task.contractId}</p>
                 </div>
               </div>
@@ -573,10 +629,15 @@ export default function FreelancerTasksPage() {
             <div className="p-6">
               <h3 className="text-xl font-bold text-gray-900 mb-4">Cancel Contract</h3>
               <div className="space-y-4">
+                <p className="text-gray-600">
+                  Please provide a valid reason to cancel this contract. Our Support Team will reach out with you within 24 hours.
+                </p>
                 <div>
-                  <Label htmlFor="cancel-reason">Reason for Cancellation</Label>
+                  <Label htmlFor="cancellation-reason" className="mb-2">Reason for Cancellation *</Label>
                   <Textarea
-                    id="cancel-reason"
+                    id="cancellation-reason"
+                    value={cancellationReason}
+                    onChange={(e) => setCancellationReason(e.target.value)}
                     placeholder="Please explain why you want to cancel this contract..."
                     rows={4}
                     className="mt-1"
@@ -584,10 +645,26 @@ export default function FreelancerTasksPage() {
                 </div>
               </div>
               <div className="flex gap-3 mt-6">
-                <Button variant="outline" onClick={() => setShowCancelContract(false)} className="flex-1">
-                  Keep Contract
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowCancelContract(false)
+                    setCancellationReason("")
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
                 </Button>
-                <Button variant="destructive" className="flex-1">
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    handleCancelContract()
+                    setShowCancelContract(false)
+                    setCancellationReason("")
+                  }}
+                  disabled={!cancellationReason.trim()}
+                  className="flex-1"
+                >
                   Cancel Contract
                 </Button>
               </div>

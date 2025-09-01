@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { DollarSign, Plus, Timer } from "lucide-react"
+import { DollarSign, History, Plus, Timer } from "lucide-react"
 import Link from "next/link"
 
 
@@ -198,6 +198,28 @@ export default function HiredFreelancersPage() {
                   </Button>
                 </Link>
               )}
+
+
+          {(freelancer.contract.status === "completed" || freelancer.contract.status === "cancelled") && (
+            <Link
+              href={{
+                pathname: `/dashboard/employer/hired-freelancer/task`,
+                query: {
+                  contractId: freelancer.contract.contractId,
+                  freelancerId: freelancer.freelancerId,
+                  jobId: freelancer.contract.jobId,
+                  employerId: freelancer.contract.employerId,
+                  hourlyRate: freelancer.hourlyRate,
+                },
+              }}
+            >
+              <Button className="w-full bg-black hover:bg-gray-800 text-white h-9 rounded-lg text-sm">
+                <History className="w-4 h-4 mr-2" />
+                View History
+              </Button>
+            </Link>
+          )}
+
             </CardContent>
           </Card>
         ))}
