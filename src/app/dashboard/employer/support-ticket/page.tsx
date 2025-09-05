@@ -233,6 +233,10 @@ export default function SupportTicketPage() {
 
       toast.success("Support ticket submitted successfully! Our Support Team will reach out to you within 24 hours!");
 
+      setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+
       setSubject("");
       setDescription("");
       setCategory("");
@@ -522,7 +526,7 @@ export default function SupportTicketPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="low">Low - General question</SelectItem>
-                      <SelectItem value="medium">Medium - Affects functionality</SelectItem>
+                      <SelectItem value="medium">Medium - Needs attention soon</SelectItem>
                       <SelectItem value="high">High - Urgent issue</SelectItem>
                           {userInfo?.isPremium && (
                             <SelectItem value="critical">

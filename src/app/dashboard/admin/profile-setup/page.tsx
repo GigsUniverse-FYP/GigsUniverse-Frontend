@@ -166,6 +166,7 @@ export default function AdminProfileSetup() {
         if (!response.ok) {
           const errorText = await response.text();
           console.error("Backend error:", response.status, errorText);
+          console.log("FormData contents: ", formDataToSend);
         }
 
         if (response.ok) {
@@ -331,7 +332,7 @@ export default function AdminProfileSetup() {
                             src={
                               formData.profilePicture instanceof File
                                 ? URL.createObjectURL(formData.profilePicture)
-                                : "/placeholder.svg"
+                                : "/public/images/placeholder.jpg"
                             }
                             className="w-full h-full object-cover"
                           />

@@ -581,10 +581,10 @@ export default function EmployerTasksPage() {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-6 p-6 min-w-3xl">
+    <div className="w-full sm:max-w-8xl min-w-[450px] mx-auto space-y-6 mb-5 -ml-20 sm:ml-0">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">Task</h1>
-        <div className="flex gap-3">
+        <div className="mt-5 flex flex-col sm:flex-row gap-3">
           {isContractEnded && (
             <Button
               onClick={() => {

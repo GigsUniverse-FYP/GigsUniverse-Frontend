@@ -179,7 +179,7 @@ export default function HiredFreelancersPage() {
 
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-6">
+    <div className="w-full sm:max-w-8xl mx-auto space-y-6 mb-5 -ml-15 sm:ml-0">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">My Jobs</h1>
         <p className="text-gray-600">Overview and Handle Your Jobs</p>

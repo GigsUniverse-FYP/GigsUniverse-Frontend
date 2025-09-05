@@ -199,7 +199,7 @@ export default function EmployerContractPage() {
   
 
   return (
-    <div className="min-h-screen bg-background p-6" ref={contractRef}>
+       <div className="w-full sm:max-w-8xl min-w-sm mx-auto space-y-6 mb-5 -ml-10 sm:ml-0" ref={contractRef}>
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">GigsUniverse Job Contract</h1>
@@ -395,7 +395,7 @@ export default function EmployerContractPage() {
         </Card>
 
         <div className="flex justify-start">
-            <span className="text-xs text-gray-500">Subject Rights by GigsUniverse Sdn. Bhd.</span>
+            <span className="text-xs text-gray-500 mb-5">Subject Rights by GigsUniverse Sdn. Bhd.</span>
         </div>
 
         <div className="flex justify-end">

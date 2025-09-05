@@ -7,7 +7,7 @@ import Link from "next/link"
 
 export default function CompanyPage() {
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="w-full sm:max-w-8xl mx-auto space-y-6 mb-5 -ml-10 sm:ml-0">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Company Management</h1>

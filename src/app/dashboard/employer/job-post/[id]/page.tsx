@@ -62,8 +62,8 @@ interface Application {
   freelancerId: string
   freelancerName: string
   freelancerAvatar: string
-  // rating: number;
-  // completedJobs: number;
+  rating: number;
+  completedJobs: number;
   hourlyRate: number
   proposal: string
   appliedAt: string
@@ -288,7 +288,7 @@ export default function JobDetailsPage({
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
+    <div className="w-full sm:max-w-8xl mx-auto space-y-6 mb-5 -ml-10 sm:ml-0">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         {/* Left side: Job info */}
@@ -594,10 +594,10 @@ export default function JobDetailsPage({
                         <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-gray-600">
                           <div className="flex items-center gap-1">
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            {/* <span>{application.rating}</span> */}
+                            <span>{application.rating}</span>
                           </div>
                           <span className="hidden sm:inline">•</span>
-                          <span>{/* {application.completedJobs} jobs completed */}</span>
+                          <span> {application.completedJobs} Contracts Completed </span>
                           <span className="hidden sm:inline">•</span>
                           <span>${application.hourlyRate}/hr</span>
                         </div>
@@ -703,6 +703,7 @@ export default function JobDetailsPage({
                         </Link>
 
                         {/* View Profile */}
+                        <Link href={`/dashboard/view-profile/freelancer?userId=${application.freelancerId}`} target="_blank">
                         <Button
                           size="sm"
                           variant="outline"
@@ -711,6 +712,7 @@ export default function JobDetailsPage({
                           <User className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                           View Profile
                         </Button>
+                        </Link>
                       </div>
                     </div>
                   </div>

@@ -305,7 +305,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="w-full sm:max-w-8xl mx-auto space-y-6 mb-5 -ml-10 sm:ml-0">
     <div className="flex items-center justify-between mb-6">
       <h1 className="text-3xl font-bold">Create Job Post</h1>
       <Link href="/dashboard/employer/job-post">

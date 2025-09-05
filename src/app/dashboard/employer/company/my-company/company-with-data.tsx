@@ -39,6 +39,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog"
+import Link from "next/link"
 
 interface AvailableEmployer{
   id: string;
@@ -339,15 +340,22 @@ export default function CompanyWithData({ companyId }: CompanyWithDataProps) {
 
     setEmployees(prev => [...prev, ...newEmployees]);
 
-    setEditData(prev => prev ? {
-      ...prev,
-      employerInvolved: [...prev.employerInvolved, ...newEmployees.map(emp => emp.email)],
-    } : prev);
+  setEditData(prev => prev ? {
+    ...prev,
+    employerInvolved: [
+      ...(prev.employerInvolved || []),
+      ...newEmployees.map(emp => emp.email),
+    ],
+  } : prev);
 
-    setCompanyData(prev => prev ? {
-      ...prev,
-      employerInvolved: [...prev.employerInvolved, ...newEmployees.map(emp => emp.email)],
-    } : prev);
+  setCompanyData(prev => prev ? {
+    ...prev,
+    employerInvolved: [
+      ...(prev.employerInvolved || []),
+      ...newEmployees.map(emp => emp.email),
+    ],
+  } : prev);
+
 
     setEmployersToAdd([]);
     setShowAddEmployeeDialog(false);
@@ -555,7 +563,7 @@ export default function CompanyWithData({ companyId }: CompanyWithDataProps) {
 
   if (isEditing) {
     return (
-      <div className="space-y-6 lg:min-w-5xl">
+      <div className="space-y-6 lg:min-w-5xl -ml-20 sm:ml-0">
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Edit Company Information</h2>
@@ -1018,7 +1026,7 @@ export default function CompanyWithData({ companyId }: CompanyWithDataProps) {
   }
   // View Mode
   return (
-    <div className="space-y-6 lg:min-w-5xl">
+    <div className="space-y-6 lg:min-w-5xl -ml-20 sm:ml-0">
       {/* Company Header */}
       <Card className="border border-gray-200 bg-white rounded-xl ">
         <CardContent className="p-8">
@@ -1198,10 +1206,12 @@ export default function CompanyWithData({ companyId }: CompanyWithDataProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {employees.map((employee) => (
               <div key={employee.id} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
+              <Link href={`/dashboard/view-profile/employer?userId=${employee.id}`} target="_blank">
                 <Avatar className="w-10 h-10">
-                  <AvatarImage src={employee.avatar || "/placeholder.svg"} />
+                  <AvatarImage src={employee.avatar || "/public/images/placeholder.jpg"} />
                   <AvatarFallback>{employee.name.charAt(0)}</AvatarFallback>
                 </Avatar>
+              </Link>
                 <div className="flex-1">
                   <p className="font-medium">{employee.name}</p>
                   <p className="text-xs text-gray-500"># {employee.email}</p>

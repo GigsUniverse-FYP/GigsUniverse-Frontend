@@ -348,25 +348,29 @@ export default function FreelancerTasksPage() {
 
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-6 p-6">
+    <div className="w-full sm:max-w-8xl min-w-[450px] mx-auto space-y-6 mb-5 -ml-20 sm:ml-0">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">My Tasks - Freelancer</h1>
-        <div className="flex gap-3">
-          <Link href={`/dashboard/freelancer/chat?userId=${employerId}`} target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" className="border border-gray-200 bg-white hover:bg-gray-50">
-              <MessageCircle className="w-4 h-4 mr-2" />
-              Chat with Employer
+        <h1 className="text-3xl font-bold text-gray-900">My Tasks </h1>
+          <div className="mt-5 flex flex-col sm:flex-row gap-3">
+            <Link href={`/dashboard/freelancer/chat?userId=${employerId}`} target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" className="border border-gray-200 bg-white hover:bg-gray-50">
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Chat with Employer
+              </Button>
+            </Link>
+            <Button
+              variant="destructive"
+              onClick={() => setShowCancelContract(true)}
+              disabled={ isContractEnded || isCancelled }
+            >
+              <XCircle className="w-4 h-4 mr-2" />
+              Cancel Contract
             </Button>
-          </Link>
-          <Button variant="destructive" onClick={() => setShowCancelContract(true)} disabled={isContractEnded || isCancelled}>
-            <XCircle className="w-4 h-4 mr-2" />
-            Cancel Contract
-          </Button>
-        </div>
+          </div>
       </div>
 
       {/* Tasks List */}
-      <div className="space-y-4">
+      <div className="space-y-4 lg:min-w-[1000px]">
         {tasksWithFiles.map(({ task, files }) => (
           <Card key={task.taskId} className="border border-gray-200">
             <CardContent className="p-6">

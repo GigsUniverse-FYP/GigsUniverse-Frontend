@@ -108,7 +108,7 @@ export default function HiredFreelancersPage() {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-6">
+    <div className="w-full sm:max-w-8xl mx-auto space-y-6 mb-5 -ml-10 sm:ml-0">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Hired Freelancers</h1>
         <p className="text-gray-600">Manage your freelancer contracts</p>
@@ -118,6 +118,7 @@ export default function HiredFreelancersPage() {
         {hiredFreelancers.map((freelancer) => (
           <Card key={freelancer.id} className="border border-gray-200 shadow-sm bg-white rounded-lg min-w-xs">
             <CardContent className="p-6">
+              <Link href={`/dashboard/view-profile/freelancer?userId=${freelancer.freelancerId}`} target="_blank" className="cursor-pointer">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
                   {freelancer.avatar ? (
@@ -130,6 +131,7 @@ export default function HiredFreelancersPage() {
                   <h3 className="font-bold text-gray-900">{freelancer.name}</h3>
                 </div>
               </div>
+              </Link>
 
               <div className="flex items-center gap-2 mb-4">
                 <DollarSign className="h-4 w-4 text-gray-600" />

@@ -51,6 +51,7 @@ import {
 } from "@/lib/data";
 import { toast } from "react-toastify";
 import Link from "next/link";
+import CompanyDialog from "../../view-profile/company/page";
 
 
 interface EmployerProfile {
@@ -68,6 +69,10 @@ interface EmployerProfile {
   languageProficiency: string;
   openToHire: boolean;
   premiumStatus: boolean;
+
+  averageRating: number;
+  totalRatings: number;
+
   certificationFiles?: {
     fileName: string;
     contentType: string;
@@ -109,43 +114,21 @@ const defaultEmployerProfile: EmployerProfile = {
   certificationFiles: [],
   jobExperiences: [],
   educations: [],
+  averageRating: 0,
+  totalRatings: 0,
 };
 
-interface jobHistoryRecord {
-  jobHistoryData?:
-    | {
-        id: string;
-        title: string;
-        client: string;
-        status: "completed" | "rejected" | "in_progress" | "cancelled";
-        startDate: string;
-        endDate: string | null;
-        budget: number;
-        rating: number | null;
-        feedback: string | null;
-        skills: string[];
-      }[]
-    | undefined;
+export interface FreelancerFeedbackDTO {
+  freelancerId: string;
+  freelancerName: string;
+  rating: number;
+  feedback: string | null;
+  hourlyRate: number;
+  contractStartDate: string | null;
+  contractEndDate: string | null;
+  jobId: string;
+  jobTitle: string;
 }
-
-const defaultJobHistory: jobHistoryRecord = {
-  jobHistoryData: [
-    {
-      id: "job_001",
-      title: "E-commerce Website Development",
-      client: "TechStart Inc",
-      status: "completed",
-      startDate: "2024-01-15",
-      endDate: "2024-03-20",
-      budget: 5000,
-      rating: 5.0,
-      feedback:
-        "Excellent work! John delivered a high-quality e-commerce platform with all requested features. Communication was outstanding throughout the project.",
-      skills: ["React", "Node.js", "MongoDB", "Stripe Integration"],
-    },
-  ],
-};
-
 
 interface ProfileCompanyDTO {
   companyId: number;
@@ -158,14 +141,46 @@ export default function EmployerProfile() {
   const [formData, setFormData] = useState<EmployerProfile>(
     defaultEmployerProfile
   );
-  const [jobHistory, setJobHistory] =
-    useState<jobHistoryRecord>(defaultJobHistory);
+
+  const [open, setOpen] = useState(false);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(
+      null
+    );
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
 
   const [company, setCompany] = useState<ProfileCompanyDTO | null>(null);
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+  const [jobs, setJobs] = useState<FreelancerFeedbackDTO[]>([]);
+
+  const handleOpen = (id: string) => {
+    setSelectedCompanyId(id);
+    setOpen(true);
+  };
+
+
+  useEffect(() => {
+    const fetchJobHistory = async () => {
+      try {
+        const res = await fetch(`${backendUrl}/api/profile/employer/freelancer-feedback`,{
+          credentials: "include",
+          method: "GET"
+        });
+        if (!res.ok) throw new Error("Failed to fetch employer feedback data");
+        const data: FreelancerFeedbackDTO[] = await res.json();
+        setJobs(data);
+        console.log(data);
+      } catch (err: any) {
+        console.error(err);
+      } 
+    };
+
+    fetchJobHistory();
+  }, []);
+
 
   useEffect(() => {
     const fetchCompany = async () => {
@@ -689,31 +704,31 @@ export default function EmployerProfile() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      completed: {
+     full: {
+        bg: "bg-orange-100",
+        text: "text-orange-800",
+        label: "Full",
+      },
+      active: {
         bg: "bg-green-100",
         text: "text-green-800",
-        label: "Completed",
+        label: "Active",
       },
-      in_progress: {
+      inactive: {
         bg: "bg-blue-100",
         text: "text-blue-800",
-        label: "In Progress",
+        label: "Inactive",
       },
-      rejected: {
+      expired: {
         bg: "bg-red-100",
         text: "text-red-800",
-        label: "Rejected",
-      },
-      cancelled: {
-        bg: "bg-gray-100",
-        text: "text-gray-800",
-        label: "Cancelled",
+        label: "Expired",
       },
     };
 
     const config =
       statusConfig[status as keyof typeof statusConfig] ||
-      statusConfig.cancelled;
+      statusConfig.expired;
 
     return (
       <Badge className={`${config.bg} ${config.text} hover:${config.bg}`}>
@@ -812,7 +827,7 @@ export default function EmployerProfile() {
             value="job-history"
             className="data-[state=active]:bg-black data-[state=active]:text-white"
           >
-            Job Posted
+            Feedback & Ratings
           </TabsTrigger>
         </TabsList>
 
@@ -914,15 +929,15 @@ export default function EmployerProfile() {
                         </p>
 
                         {/* Rating Display -- need changes*/}
-                        {/* <div className="flex items-center justify-center gap-2 mt-3">
-                          {renderStars(formData.rating)}
+                        <div className="flex items-center justify-center gap-2 mt-3">
+                          {renderStars(formData.averageRating)}
                           <span className="text-lg font-semibold text-gray-900">
-                            {formData.rating}
+                            {formData.averageRating}
                           </span>
                           <span className="text-sm text-gray-500">
-                            ({formData.totalReviews} reviews)
+                            ({formData.totalRatings} reviews)
                           </span>
-                        </div> */}
+                        </div>
                       </div>
                     )}
 
@@ -971,15 +986,17 @@ export default function EmployerProfile() {
                       <div className="mt-3 pt-4">
                         <div className="flex items-center justify-center">
                           <CheckCircle className="w-5 h-5 text-blue-500 mr-2" />
-                          <span className="text-sm font-medium text-gray-700">
-                            Official <span className="capitalize">{company.role}</span> in{" "}
-                            <Link
-                              href={`/company/${company.companyId}`}
-                              className="text-blue-600 font-medium hover:text-blue-700 underline"
+                        <span className="text-sm font-medium text-gray-700">
+                          Official{" "}
+                          <span className="capitalize">
+                            {company.role} in{" "}
+                            <span className="text-blue-600 font-medium hover:text-blue-700 underline cursor-pointer"
+                                onClick={() => handleOpen(company.companyId.toString())}
                             >
                               {company.companyName}
-                            </Link>
+                            </span>
                           </span>
+                        </span>
                         </div>
                       </div>
                     )}
@@ -1658,120 +1675,72 @@ export default function EmployerProfile() {
 
         <TabsContent value="job-history" className="mt-6">
           <div className="space-y-6">
-            {/* Job History Stats  -- need changes*/}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card className="border border-gray-200 shadow-sm bg-white rounded-xl">
-                <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-green-600">
-                    {jobHistory?.jobHistoryData?.filter(
-                      (job) => job.status === "completed"
-                    ).length ?? 0}
-                  </div>
-                  <div className="text-sm text-gray-600">Completed</div>
-                </CardContent>
-              </Card>
-              <Card className="border border-gray-200 shadow-sm bg-white rounded-xl">
-                <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {jobHistory?.jobHistoryData?.filter(
-                      (job) => job.status === "in_progress"
-                    ).length ?? 0}
-                  </div>
-                  <div className="text-sm text-gray-600">In Progress</div>
-                </CardContent>
-              </Card>
-              <Card className="border border-gray-200 shadow-sm bg-white rounded-xl">
-                <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-red-600">
-                    {jobHistory?.jobHistoryData?.filter(
-                      (job) => job.status === "rejected"
-                    ).length ?? 0}
-                  </div>
-                  <div className="text-sm text-gray-600">Rejected</div>
-                </CardContent>
-              </Card>
-              <Card className="border border-gray-200 shadow-sm bg-white rounded-xl">
-                <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-gray-600">
-                    {jobHistory?.jobHistoryData?.filter(
-                      (job) => job.status === "cancelled"
-                    ).length ?? 0}
-                  </div>
-                  <div className="text-sm text-gray-600">Cancelled</div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Job History List */}
+            {/* Freelancer Feedback List */}
             <Card className="border border-gray-200 shadow-sm bg-white rounded-xl">
               <CardHeader className="border-b border-gray-100">
-                <CardTitle className="text-gray-900">Job History</CardTitle>
+                <CardTitle className="text-gray-900">Freelancer Feedback</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="divide-y divide-gray-100">
-                  {jobHistory?.jobHistoryData?.map((job, index) => (
-                    <div key={job.id} className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {job.title}
-                          </h3>
-                          <p className="text-gray-600">Client: {job.client}</p>
-                          <p className="text-sm text-gray-500">
-                            {job.startDate} - {job.endDate || "Ongoing"}
-                          </p>
+                  {jobs.length === 0 && (
+                  <div className="flex-1 p-10 ml-10 mr-10 h-full flex items-center justify-center bg-gray-50 rounded-xl border border-transparent">
+                    <p className="text-sm text-gray-500 text-center">
+                      &nbsp; No Feedback Record is Found for this Employer. &nbsp;
+                    </p>
+                  </div>
+                  )}
+
+                  {/* Group feedback by job */}
+                  {Object.entries(
+                    jobs.reduce((acc: Record<string, FreelancerFeedbackDTO[]>, feedback) => {
+                      if (!acc[feedback.jobId]) acc[feedback.jobId] = [];
+                      acc[feedback.jobId].push(feedback);
+                      return acc;
+                    }, {})
+                  ).map(([jobId, feedbacks]) => {
+                    const jobTitle = feedbacks[0].jobTitle;
+                    return (
+                      <div key={jobId} className="p-6">
+                        {/* Job Header */}
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-gray-900">{jobTitle}</h3>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          {getStatusBadge(job.status)}
-                          <div className="text-right">
-                            <div className="text-lg font-semibold text-gray-900">
-                              ${job.budget.toLocaleString()}
+
+                        {/* Freelancer Feedback */}
+                        {feedbacks
+                          .filter((f) => f.rating > 0 || f.feedback)
+                          .map((f) => (
+                            <div
+                              key={f.freelancerId + "-" + f.contractStartDate}
+                              className="bg-gray-50 rounded-lg p-4 mb-2"
+                            >
+                              <p className="font-semibold text-gray-800">{f.freelancerName}</p>
+                              <p className="font-sm text-gray-500 mb-2">{f.freelancerId}</p>
+
+                              {f.rating > 0 && (
+                                <div className="flex items-center gap-2 mb-1">
+                                  {renderStars(f.rating)}
+                                  <span className="text-gray-900 font-medium">{f.rating}/5.0</span>
+                                </div>
+                              )}
+
+                              {f.feedback && (
+                                <p className="text-gray-700 text-sm italic mt-1">"{f.feedback}"</p>
+                              )}
+
+                              <div className="text-sm text-gray-500 mt-1">
+                                <p>Hourly Rate: ${f.hourlyRate}</p>
+                                <p>
+                                  Contract: {f.contractStartDate} - {f.contractEndDate || "Ongoing"}
+                                </p>
+                              </div>
                             </div>
-                            <div className="text-sm text-gray-500">Budget</div>
-                          </div>
-                        </div>
+                          ))}
                       </div>
-
-                      {/* Skills */}
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {job.skills.map((skill: string) => (
-                          <Badge
-                            key={skill}
-                            variant="outline"
-                            className="border-gray-300 text-xs"
-                          >
-                            {skill}
-                          </Badge>
-                        ))}
-                      </div>
-
-                      {/* Rating and Feedback */}
-                      {job.rating && (
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <div className="flex items-center gap-2 mb-2">
-                            {renderStars(job.rating)}
-                            <span className="font-semibold text-gray-900">
-                              {job.rating}/5.0
-                            </span>
-                          </div>
-                          {job.feedback && (
-                            <p className="text-gray-700 text-sm italic">
-                              "{job.feedback}"
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Feedback for non-completed jobs */}
-                      {job.feedback && !job.rating && (
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <p className="text-gray-700 text-sm italic">
-                            "{job.feedback}"
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -1793,6 +1762,12 @@ export default function EmployerProfile() {
         onOpenChange={(open) => setPreviewDialog((prev) => ({ ...prev, open }))}
         file={previewDialog.file}
       />
+
+      <CompanyDialog
+          companyId={selectedCompanyId}
+          open={open}
+          onOpenChange={setOpen}
+        />
     </div>
   );
 }

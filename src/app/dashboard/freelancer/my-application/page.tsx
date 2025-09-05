@@ -115,7 +115,7 @@ export default function AppliedJobsPage() {
   }
 
   return (
-    <div className="w-full sm:max-w-8xl mx-auto space-y-6 mb-5 -ml-10 sm:ml-0">
+    <div className="w-full sm:max-w-8xl min-w-sm mx-auto space-y-6 mb-5 -ml-15 sm:ml-0">
       {/* Applied Jobs Header */}
       <div className="text-center sm:text-left">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-4 mb-4">Applied Jobs</h1>

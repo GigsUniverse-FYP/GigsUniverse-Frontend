@@ -481,7 +481,7 @@ export default function HoverSidebar({ isMobileOpen = false, onMobileClose }: Ho
               <h2 className="font-black text-gray-900 text-lg whitespace-nowrap">GigsUniverse</h2>
               <div className="flex items-center gap-2">
                 <Badge className="bg-gray-100 text-gray-700 border-gray-300 text-xs font-medium rounded-lg">
-                  Freelancer
+                  Employer
                 </Badge>
                 <div className="flex items-center gap-1">
                   <Badge className="bg-black text-white text-xs font-medium rounded-lg border-0 flex items-center gap-1">
@@ -592,30 +592,35 @@ export default function HoverSidebar({ isMobileOpen = false, onMobileClose }: Ho
               {/* Dropdown menu */}
               <div
                 className={`mt-1 pl-6 space-y-1 overflow-hidden transition-all duration-200 ${
-                  showMoreSettings ? "max-h-32 opacity-100" : "max-h-0 opacity-0"
+                  showMoreSettings
+                    ? "max-h-40 opacity-100"
+                    : "max-h-0 opacity-0"
                 }`}
               >
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start text-gray-600 hover:text-black hover:bg-gray-100 rounded-xl h-8 text-sm"
-                >
-                  <User className="w-3.5 h-3.5 mr-2" />
-                  <span>My Profile</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start text-gray-600 hover:text-black hover:bg-gray-100 rounded-xl h-8 text-sm"
-                >
-                  <CreditCard className="w-3.5 h-3.5 mr-2" />
-                  <span>Stripe Express</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start text-gray-600 hover:text-black hover:bg-gray-100 rounded-xl h-8 text-sm"
-                >
-                  <CreditCard className="w-3.5 h-3.5 mr-2" />
-                  <span>Subscription</span>
-                </Button>
+                {settingsMenuItems.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <Button
+                      key={item.href}
+                      asChild
+                      variant="ghost"
+                      className={`w-full justify-start rounded-xl h-8 text-sm ${
+                        isActive
+                          ? "bg-black text-white"
+                          : "text-gray-600 hover:text-black hover:bg-gray-100"
+                      }`}
+                    >
+                      <a href={item.href} onClick={handleMobileClose}>
+                        <item.icon
+                          className={`w-3.5 h-3.5 mr-2 ${
+                            isActive ? "text-white" : ""
+                          }`}
+                        />
+                        <span>{item.label}</span>
+                      </a>
+                    </Button>
+                  );
+                })}
               </div>
             </div>
             {/* Logout Button for mobile drawer */}

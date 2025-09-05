@@ -84,6 +84,10 @@ interface FreelancerProfile {
   preferredPayRate: number;
   openToWork: boolean;
   premiumStatus: boolean;
+
+  averageRating: number;
+  totalRatings: number;
+
   resumeFile?: FileData;
   portfolioFiles?: {
     fileName: string;
@@ -134,6 +138,8 @@ const defaultFreelancerProfile: FreelancerProfile = {
   preferredPayRate: 0,
   openToWork: false,
   premiumStatus: false,
+  averageRating: 0,
+  totalRatings: 0,
   resumeFile: undefined,
   portfolioFiles: [],
   certificationFiles: [],
@@ -142,47 +148,40 @@ const defaultFreelancerProfile: FreelancerProfile = {
 };
 
 interface jobHistoryRecord {
-  jobHistoryData?:
-    | {
-        id: string;
-        title: string;
-        client: string;
-        status: "completed" | "rejected" | "in_progress" | "cancelled";
-        startDate: string;
-        endDate: string | null;
-        budget: number;
-        rating: number | null;
-        feedback: string | null;
-        skills: string[];
-      }[]
-    | undefined;
+  id: string;
+  title: string;
+  client: string;
+  status: "completed" | "active" | "upcoming" | "cancelled";
+  startDate: string;
+  endDate: string | null;
+  budget: number;
+  rating: number | null;
+  feedback: string | null;
+  skills: string[];
+  companyName: string;
+  clientId: string;
+  cancellationReason: string;
 }
 
-const defaultJobHistory: jobHistoryRecord = {
-  jobHistoryData: [
-    {
-      id: "job_001",
-      title: "E-commerce Website Development",
-      client: "TechStart Inc",
-      status: "completed",
-      startDate: "2024-01-15",
-      endDate: "2024-03-20",
-      budget: 5000,
-      rating: 5.0,
-      feedback:
-        "Excellent work! John delivered a high-quality e-commerce platform with all requested features. Communication was outstanding throughout the project.",
-      skills: ["React", "Node.js", "MongoDB", "Stripe Integration"],
-    },
-  ],
-};
+export const formatDate = (isoDate: string | undefined | null) => {
+  if (!isoDate) return ""
+  const date = new Date(isoDate)
+  return date.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  })
+}
 
 export default function FreelancerProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<FreelancerProfile>(
     defaultFreelancerProfile
   );
-  const [jobHistory, setJobHistory] =
-    useState<jobHistoryRecord>(defaultJobHistory);
+  const [jobHistory, setJobHistory] = useState<jobHistoryRecord[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
 
@@ -190,6 +189,28 @@ export default function FreelancerProfile() {
   const resumeInputRef = useRef<HTMLInputElement>(null);
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+  useEffect(() => {
+    const fetchJobHistory = async () => {
+      try {
+        const res = await fetch(
+          `${backendUrl}/api/profile/freelancer/job-history`,
+          {
+            credentials: "include",
+          }
+        );
+        if (!res.ok) throw new Error("Failed to fetch job history");
+
+        const data: jobHistoryRecord[] = await res.json();
+        setJobHistory(data);
+        console.log(data);
+      } catch (err: any) {
+        console.error("Problem occurs when fetching job history");
+      }
+    };
+
+    fetchJobHistory();
+  }, []);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -206,6 +227,7 @@ export default function FreelancerProfile() {
         }
 
         const data = await res.json();
+        console.log(data);
         setFormData(data);
       } catch (err) {
         console.error("Error fetching profile:", err);
@@ -253,7 +275,7 @@ export default function FreelancerProfile() {
 
   const skillTagsSelected =
     formData?.skillTags.split(",").filter(Boolean) || [];
-    
+
   const languageProficiency = JSON.parse(formData?.languageProficiency || "[]");
 
   const handleInputChange = <K extends keyof FreelancerProfile>(
@@ -630,7 +652,6 @@ export default function FreelancerProfile() {
   const handleSave = async () => {
     setIsSubmitting(true);
     try {
-
       if (
         formData &&
         !formData.premiumStatus &&
@@ -829,19 +850,19 @@ export default function FreelancerProfile() {
         text: "text-green-800",
         label: "Completed",
       },
-      in_progress: {
+      active: {
         bg: "bg-blue-100",
         text: "text-blue-800",
-        label: "In Progress",
+        label: "Active",
       },
-      rejected: {
-        bg: "bg-red-100",
-        text: "text-red-800",
-        label: "Rejected",
+      upcoming: {
+        bg: "bg-orange-100",
+        text: "text-orange-800",
+        label: "Upcoming",
       },
       cancelled: {
-        bg: "bg-gray-100",
-        text: "text-gray-800",
+        bg: "bg-red-100",
+        text: "text-red-800",
         label: "Cancelled",
       },
     };
@@ -1049,15 +1070,15 @@ export default function FreelancerProfile() {
                         </p>
 
                         {/* Rating Display -- need changes*/}
-                        {/* <div className="flex items-center justify-center gap-2 mt-3">
-                          {renderStars(formData.rating)}
+                        <div className="flex items-center justify-center gap-2 mt-3">
+                          {renderStars(formData.averageRating)}
                           <span className="text-lg font-semibold text-gray-900">
-                            {formData.rating}
+                            {formData.averageRating}
                           </span>
                           <span className="text-sm text-gray-500">
-                            ({formData.totalReviews} reviews)
+                            ({formData.totalRatings} reviews)
                           </span>
-                        </div> */}
+                        </div>
                       </div>
                     )}
 
@@ -2069,7 +2090,8 @@ export default function FreelancerProfile() {
                   </CardHeader>
                   <CardContent className="pt-0">
                     {isEditing &&
-                      (formData?.portfolioFiles?.length ?? 0) < (formData?.premiumStatus ? 5 : 2) && (
+                      (formData?.portfolioFiles?.length ?? 0) <
+                        (formData?.premiumStatus ? 5 : 2) && (
                         <div className="mb-4">
                           <Label
                             htmlFor="portfolioUpload"
@@ -2078,7 +2100,8 @@ export default function FreelancerProfile() {
                             <div className="flex items-center justify-center gap-2 p-3 border border-dashed border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                               <Upload className="w-4 h-4" />
                               <span className="text-sm">
-                                Upload Portfolio ({formData?.portfolioFiles?.length ?? 0}/
+                                Upload Portfolio (
+                                {formData?.portfolioFiles?.length ?? 0}/
                                 {formData?.premiumStatus ? 5 : 2})
                               </span>
                             </div>
@@ -2096,8 +2119,9 @@ export default function FreelancerProfile() {
                         </div>
                       )}
 
-                      {/* Soft-block Warning for Free Users */}
-                      {!formData?.premiumStatus && (formData?.portfolioFiles?.length ?? 0) > 2 && (
+                    {/* Soft-block Warning for Free Users */}
+                    {!formData?.premiumStatus &&
+                      (formData?.portfolioFiles?.length ?? 0) > 2 && (
                         <p className="text-red-500 text-sm mb-4">
                           You have exceeded the free limit of 2 portfolio items.
                           Please remove extra files to save your changes.
@@ -2166,7 +2190,8 @@ export default function FreelancerProfile() {
                   </CardHeader>
                   <CardContent className="pt-0">
                     {isEditing &&
-                      (formData?.certificationFiles?.length ?? 0) < (formData?.premiumStatus ? 7 : 3) && (
+                      (formData?.certificationFiles?.length ?? 0) <
+                        (formData?.premiumStatus ? 7 : 3) && (
                         <div className="mb-4">
                           <Label
                             htmlFor="certificationUpload"
@@ -2175,7 +2200,8 @@ export default function FreelancerProfile() {
                             <div className="flex items-center justify-center gap-2 p-3 border border-dashed border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                               <Upload className="w-4 h-4" />
                               <span className="text-sm">
-                                Upload Cert ({formData?.certificationFiles?.length ?? 0}/
+                                Upload Cert (
+                                {formData?.certificationFiles?.length ?? 0}/
                                 {formData?.premiumStatus ? 7 : 3})
                               </span>
                             </div>
@@ -2193,11 +2219,12 @@ export default function FreelancerProfile() {
                         </div>
                       )}
 
-                      {/* Soft-block Warning for Free Users */}
-                      {!formData?.premiumStatus && (formData?.certificationFiles?.length ?? 0) > 3 && (
+                    {/* Soft-block Warning for Free Users */}
+                    {!formData?.premiumStatus &&
+                      (formData?.certificationFiles?.length ?? 0) > 3 && (
                         <p className="text-red-500 text-sm mb-4">
-                          You have exceeded the free limit of 3 certification items.
-                          Please remove extra files to save your changes.
+                          You have exceeded the free limit of 3 certification
+                          items. Please remove extra files to save your changes.
                         </p>
                       )}
 
@@ -2257,16 +2284,18 @@ export default function FreelancerProfile() {
           </div>
         </TabsContent>
 
-        <TabsContent value="job-history" className="mt-6">
+        <TabsContent value="job-history" className="mt-6 lg:min-w-[1000px]">
           <div className="space-y-6">
-            {/* Job History Stats  -- need changes*/}
+            {/* Job History Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="border border-gray-200 shadow-sm bg-white rounded-xl">
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-green-600">
-                    {jobHistory?.jobHistoryData?.filter(
-                      (job) => job.status === "completed"
-                    ).length ?? 0}
+                    {
+                      jobHistory.filter(
+                        (job: jobHistoryRecord) => job.status === "completed"
+                      ).length
+                    }
                   </div>
                   <div className="text-sm text-gray-600">Completed</div>
                 </CardContent>
@@ -2274,29 +2303,35 @@ export default function FreelancerProfile() {
               <Card className="border border-gray-200 shadow-sm bg-white rounded-xl">
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-blue-600">
-                    {jobHistory?.jobHistoryData?.filter(
-                      (job) => job.status === "in_progress"
-                    ).length ?? 0}
+                    {
+                      jobHistory.filter(
+                        (job: jobHistoryRecord) => job.status === "active"
+                      ).length
+                    }
                   </div>
-                  <div className="text-sm text-gray-600">In Progress</div>
+                  <div className="text-sm text-gray-600">Active</div>
                 </CardContent>
               </Card>
               <Card className="border border-gray-200 shadow-sm bg-white rounded-xl">
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-red-600">
-                    {jobHistory?.jobHistoryData?.filter(
-                      (job) => job.status === "rejected"
-                    ).length ?? 0}
+                    {
+                      jobHistory.filter(
+                        (job: jobHistoryRecord) => job.status === "upcoming"
+                      ).length
+                    }
                   </div>
-                  <div className="text-sm text-gray-600">Rejected</div>
+                  <div className="text-sm text-gray-600">Upcoming</div>
                 </CardContent>
               </Card>
               <Card className="border border-gray-200 shadow-sm bg-white rounded-xl">
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-gray-600">
-                    {jobHistory?.jobHistoryData?.filter(
-                      (job) => job.status === "cancelled"
-                    ).length ?? 0}
+                    {
+                      jobHistory.filter(
+                        (job: jobHistoryRecord) => job.status === "cancelled"
+                      ).length
+                    }
                   </div>
                   <div className="text-sm text-gray-600">Cancelled</div>
                 </CardContent>
@@ -2310,25 +2345,27 @@ export default function FreelancerProfile() {
               </CardHeader>
               <CardContent className="p-0">
                 <div className="divide-y divide-gray-100">
-                  {jobHistory?.jobHistoryData?.map((job, index) => (
+                  {jobHistory.map((job: jobHistoryRecord, index: number) => (
                     <div key={job.id} className="p-6">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
                           <h3 className="text-lg font-semibold text-gray-900">
                             {job.title}
                           </h3>
+                          <p className="text-gray-600">ClientID: {job.clientId}</p>
                           <p className="text-gray-600">Client: {job.client}</p>
+                          <p className="text-gray-600">Company Name: {job.companyName}</p>
                           <p className="text-sm text-gray-500">
-                            {job.startDate} - {job.endDate || "Ongoing"}
+                            {formatDate(job.startDate)} - {formatDate(job.endDate) || "Ongoing"}
                           </p>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
                           {getStatusBadge(job.status)}
                           <div className="text-right">
                             <div className="text-lg font-semibold text-gray-900">
                               ${job.budget.toLocaleString()}
                             </div>
-                            <div className="text-sm text-gray-500">Budget</div>
+                            <div className="text-sm text-gray-500">Hourly Rate</div>
                           </div>
                         </div>
                       </div>
@@ -2347,12 +2384,12 @@ export default function FreelancerProfile() {
                       </div>
 
                       {/* Rating and Feedback */}
-                      {job.rating && (
+                      {job.status === "completed" && job.rating && (
                         <div className="bg-gray-50 rounded-lg p-4">
                           <div className="flex items-center gap-2 mb-2">
                             {renderStars(job.rating)}
                             <span className="font-semibold text-gray-900">
-                              {job.rating}/5.0
+                              {job.rating}/5
                             </span>
                           </div>
                           {job.feedback && (
@@ -2360,6 +2397,14 @@ export default function FreelancerProfile() {
                               "{job.feedback}"
                             </p>
                           )}
+                        </div>
+                      )}
+
+                      {job.status === "cancelled" && (
+                        <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-gray-700 text-sm italic">
+                              "{job.cancellationReason}"
+                            </p>
                         </div>
                       )}
 
@@ -2373,6 +2418,13 @@ export default function FreelancerProfile() {
                       )}
                     </div>
                   ))}
+                  {jobHistory.length === 0 && (
+                  <div className="flex-1 p-10 h-full flex items-center justify-center bg-gray-50 rounded-xl border border-transparent">
+                    <p className="text-sm text-gray-500 text-center">
+                      &nbsp; No Job History is Found. &nbsp;
+                    </p>
+                </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

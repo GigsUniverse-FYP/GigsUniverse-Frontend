@@ -40,7 +40,6 @@ import {
   MapPin,
   Clock,
   DollarSign,
-  Heart,
   ChevronDown,
   X,
   Eye,
@@ -117,12 +116,10 @@ export default function JobSearchPage() {
   const [jobType, setJobType] = useState("all");
   const [savedJobs, setSavedJobs] = useState<number[]>([]);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [selectedJob, setSelectedJob] = useState<(typeof jobs)[0] | null>(null);
-  const [showApplyDialog, setShowApplyDialog] = useState(false);
-  const [applicationData, setApplicationData] = useState({
-    ratePerHour: "",
-    proposal: "",
-  });
+
+  const [ showRemoveJob, setShowRemoveJob ] = useState(false);
+  const [ removalReason, setRemovalReason ] = useState("");
+  const [ removeJob, setRemoveJob ] = useState<number | null>(null);
 
   const searchParams = useSearchParams()
   const jobIdFromQuery = searchParams.get("id")
@@ -135,69 +132,7 @@ export default function JobSearchPage() {
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-  const [isPremium, setIsPremium] = useState(false);
-
-  useEffect(() => {
-    const fetchPremiumStatus = async () => {
-      try {
-        const res = await fetch(
-          `${backendUrl}/api/freelancer/subscription/premium-status`,
-          {
-            method: "GET",
-            credentials: "include",
-          }
-        );
-
-        if (!res.ok) {
-          throw new Error("Failed to fetch premium status");
-        }
-
-        const data: boolean = await res.json();
-        setIsPremium(data);
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-    fetchPremiumStatus();
-  }, []);
-
-
   const [jobs, setJobs] = useState<Job[]>([]);
-
-
-  const toggleSaveJob = async (jobId: number) => {
-    const isSaved = savedJobs.includes(jobId);
-    try {
-      if (!isSaved) {
-        await fetch(`${backendUrl}/api/favourites/toggle`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ jobId }),
-        });
-
-        setSavedJobs([...savedJobs, jobId]);
-        setJobs(
-          jobs.map((job) => (job.id === jobId ? { ...job, saved: true } : job))
-        );
-      } else {
-        await fetch(`${backendUrl}/api/favourites/toggle`, {
-          method: "DELETE",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ jobId }),
-        });
-
-        setSavedJobs(savedJobs.filter((id) => id !== jobId));
-        setJobs(
-          jobs.map((job) => (job.id === jobId ? { ...job, saved: false } : job))
-        );
-      }
-    } catch (error) {
-      console.error("Error toggling favourite job:", error);
-    }
-  };
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -278,6 +213,32 @@ export default function JobSearchPage() {
 
     fetchJobs();
   }, []);
+
+
+  const handleRemoveJob = async (removeJob: number) => {
+    try {
+      const res = await fetch(
+        `${backendUrl}/api/job-posts/remove-job/${removeJob}`,
+        {
+          method: "POST", 
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ reason: removalReason }),
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to remove job");
+      setJobs((prev) => prev.filter((job) => job.id !== removeJob));
+
+      toast.success("Job removed successfully");
+
+    } catch (err: any) {
+      console.error("Error Occurred While Removing Job:", err);
+    }
+  };
+
 
   const [filters, setFilters] = useState({
     jobField: "all",
@@ -391,71 +352,6 @@ export default function JobSearchPage() {
       matchesFavourite
     );
   });
-
-  const handleApplyJob = async (job: (typeof jobs)[0]) => {
-    try {
-      const res = await fetch(`${backendUrl}/api/job-applications/check?jobId=${job.id}`, {
-        method: "GET",
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to check application status");
-      }
-
-      const data: { applied: boolean } = await res.json();
-
-      if (data.applied) {
-        toast.error("You have already applied to this job");
-        return;
-      }
-
-      setSelectedJob(job);
-      setShowApplyDialog(true);
-    } catch (err) {
-      console.error(err);
-      toast.error("Something went wrong. Please try again.");
-    }
-  };
-
-  const submitApplication = async () => {
-    if (!selectedJob) return;
-
-    try {
-      const res = await fetch(`${backendUrl}/api/job-applications/apply`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          jobId: selectedJob.id,
-          ratePerHour: applicationData.ratePerHour,
-          proposal: applicationData.proposal,
-        }),
-      });
-
-      if (!res.ok) {
-        const errorMessage = await res.text();
-        
-        if (errorMessage.includes("full")) {
-          toast.error("Sorry, this job is already full.");
-        } else {
-          toast.error(errorMessage || "Failed to apply for job");
-        }
-        return;
-      }
-
-      const data = await res.json();
-      toast.success("Job Application Submitted !");
-      setShowApplyDialog(false);
-      setApplicationData({ ratePerHour: "", proposal: "" });
-
-    } catch (err) {
-      console.error("Error applying for job:", err);
-      toast.error("Something went wrong. Please try again.");
-    }
-  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -728,31 +624,6 @@ export default function JobSearchPage() {
                             )
                           )}
                         </div>
-                        <br></br>
-                        <Label className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                          <Heart className="h-4 w-4" />
-                          Favourite Job Only
-                        </Label>
-                        <div className="space-y-2">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id="favouriteJob"
-                              checked={filters.favouriteJob}
-                              onCheckedChange={() =>
-                                setFilters((prev) => ({
-                                  ...prev,
-                                  favouriteJob: !prev.favouriteJob,
-                                }))
-                              }
-                            />
-                            <Label
-                              htmlFor="favouriteJob"
-                              className="text-sm text-gray-700"
-                            >
-                              Favourite Jobs
-                            </Label>
-                          </div>
-                        </div>
                       </div>
 
                       {/* Education Level */}
@@ -957,20 +828,6 @@ export default function JobSearchPage() {
                           {job.companyName}
                         </p>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleSaveJob(job.id)}
-                        className="p-2 hover:bg-gray-100 rounded-lg"
-                      >
-                        <Heart
-                          className={`h-5 w-5 ${
-                            savedJobs.includes(job.id)
-                              ? "fill-black text-black"
-                              : "text-gray-400"
-                          }`}
-                        />
-                      </Button>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm text-gray-600">
@@ -1060,26 +917,12 @@ export default function JobSearchPage() {
                   </div>
 
                   <div className="flex flex-col gap-3 lg:ml-6 lg:min-w-[140px]">
-                    <Button
-                      className={`h-11 rounded-lg font-semibold ${
-                        job.jobStatus !== "Active" ||
-                        (job.isPremiumJob && !isPremium)
-                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                          : "bg-black hover:bg-gray-800 text-white"
-                      }`}
-                      disabled={
-                        job.jobStatus !== "Active" ||
-                        (job.isPremiumJob && !isPremium)
-                      }
-                      onClick={() => handleApplyJob(job)}
-                    >
-                      {job.jobStatus !== "Active"
-                        ? job.jobStatus === "Expired"
-                          ? "Expired"
-                          : "Position Full"
-                        : job.isPremiumJob && !isPremium
-                        ? "Premium Only"
-                        : "Apply Now"}
+                    <Button onClick={() => {
+                      setShowRemoveJob(true)
+                      setRemoveJob(job.id)
+                      }}
+                      className={`h-11 bg-white border cursor-pointer border-red-500 text-red-500 rounded-lg font-semibold hover:bg-red-500 hover:text-white`}>
+                      Remove Job
                     </Button>
 
                     <Sheet>
@@ -1331,7 +1174,7 @@ export default function JobSearchPage() {
                               </p>
                             </CardContent>
                           </Card>
-                          <Card className="border border-gray-200 ml-2">
+                          <Card className="border border-gray-200 ml-2 mb-5">
                             <CardHeader className="pb-3">
                               <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                                 <Calendar className="h-5 w-5" />
@@ -1370,30 +1213,6 @@ export default function JobSearchPage() {
                               </div>
                             </CardContent>
                           </Card>
-                          {/* Apply Button in Drawer */}
-                          <div className="sticky bottom-0 bg-white border-t border-gray-200 pt-6 -mx-6 px-6 -mb-6 pb-6">
-                            <Button
-                              className={`h-11 rounded-lg font-semibold w-full ${
-                                job.jobStatus !== "Active" ||
-                                (job.isPremiumJob && !isPremium)
-                                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                  : "bg-black hover:bg-gray-800 text-white"
-                              }`}
-                              disabled={
-                                job.jobStatus !== "Active" ||
-                                (job.isPremiumJob && !isPremium)
-                              }
-                              onClick={() => handleApplyJob(job)}
-                            >
-                              {job.jobStatus !== "Active"
-                                ? job.jobStatus === "Expired"
-                                  ? "Expired"
-                                  : "Position Full"
-                                : job.isPremiumJob && !isPremium
-                                ? "Premium Only"
-                                : "Apply For this Job"}
-                            </Button>
-                          </div>
                         </div>
                       </SheetContent>
                     </Sheet>
@@ -1431,84 +1250,57 @@ export default function JobSearchPage() {
         )}
       </div>
 
-      <Dialog open={showApplyDialog} onOpenChange={setShowApplyDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Apply for {selectedJob?.jobTitle}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-4">
-            <div>
-              <Label
-                htmlFor="rate"
-                className="text-sm font-semibold text-gray-900"
-              >
-                Your Rate per Hour ($)
-              </Label>
-              <Input
-                id="rate"
-                type="number"
-                placeholder="Enter your hourly rate"
-                value={applicationData.ratePerHour}
-                onChange={(e) =>
-                  setApplicationData((prev) => ({
-                    ...prev,
-                    ratePerHour: e.target.value,
-                  }))
-                }
-                className="mt-2"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Job budget: ${selectedJob?.preferredPayrate}/hour
-              </p>
-            </div>
-
-            <div>
-              <Label
-                htmlFor="proposal"
-                className="text-sm font-semibold text-gray-900"
-              >
-                Your Proposal
-              </Label>
-              <Textarea
-                id="proposal"
-                placeholder="Write a compelling proposal explaining why you're the perfect fit for this job..."
-                value={applicationData.proposal}
-                onChange={(e) =>
-                  setApplicationData((prev) => ({
-                    ...prev,
-                    proposal: e.target.value,
-                  }))
-                }
-                maxLength={1000}
-                className="mt-2 min-h-[120px]"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                {applicationData.proposal.length}/1000 * (Max 1000 Characters)
-              </p>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setShowApplyDialog(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={submitApplication}
-                disabled={
-                  !applicationData.ratePerHour || !applicationData.proposal
-                }
-                className="flex-1 bg-black hover:bg-gray-800 text-white"
-              >
-                <Send className="h-4 w-4 mr-2" />
-                Submit Application
-              </Button>
+      {showRemoveJob && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Remove Job</h3>
+              <div className="space-y-4">
+                <p className="text-gray-600">
+                  Please provide a valid reason to remove this job posting.
+                </p>
+                <div>
+                  <Label htmlFor="removal-reason" className="mb-2">Reason for Removal *</Label>
+                  <Textarea
+                    id="removal-reason"
+                    value={removalReason}
+                    onChange={(e) => setRemovalReason(e.target.value)}
+                    placeholder="Please explain why you want to remove this job posting..."
+                    rows={4}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowRemoveJob(false)
+                    setRemovalReason("")
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    if (removeJob !== null) {
+                      handleRemoveJob(removeJob)
+                    }
+                    setShowRemoveJob(false)
+                    setRemovalReason("")
+                  }}
+                  disabled={!removalReason.trim()}
+                  className="flex-1"
+                >
+                  Remove Job
+                </Button>
+              </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 }
