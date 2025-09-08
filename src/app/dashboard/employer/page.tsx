@@ -1,8 +1,6 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { SimpleBarChart, SimpleLineChart } from "@/app/components/dashboard_chart"
 import {
   DollarSign,
@@ -351,7 +349,7 @@ export default function FreelancerDashboard() {
               </div>
             ))}
             {pendingTasks.length === 0 && (
-              <div className="flex-1 p-15 h-full/2 flex items-center justify-center bg-gray-50 rounded-xl border border-transparent">
+              <div className="flex-1 p-15 h-full flex items-center justify-center bg-gray-50 rounded-xl border border-transparent">
                 <p className="text-sm text-gray-500 text-center">
                   &nbsp; No Submitted Task Available &nbsp;
                 </p>

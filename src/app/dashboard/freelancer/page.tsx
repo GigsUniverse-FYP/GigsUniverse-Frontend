@@ -552,7 +552,7 @@ export default function FreelancerDashboard() {
               </div>
             ))
           ) : (
-          <div className="flex-1 p-10 h-full flex items-center justify-center bg-gray-50 rounded-xl border border-transparent">
+          <div className="flex-1 p-15 h-full flex items-center justify-center bg-gray-50 rounded-xl border border-transparent">
             <p className="text-sm text-gray-500 text-center">
               &nbsp; No upcoming deadlines, All Good. &nbsp;
             </p>
