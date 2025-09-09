@@ -265,6 +265,23 @@ export default function ChatInterface() {
       }
     }, [chatIdFromQuery])
     
+  const handleBase64Open = (file: { name: string; url: string }) => {
+
+    const byteString = atob(file.url.split(",")[1]);
+    const mimeString = file.url.split(",")[0].split(":")[1].split(";")[0];
+
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+
+    const blob = new Blob([ab], { type: mimeString });
+    const blobUrl = URL.createObjectURL(blob);
+
+    window.open(blobUrl, "_blank");
+
+  };
 
   const handleReport = () => {
     window.open("/dashboard/freelancer/support-ticket", "_blank");
@@ -787,6 +804,8 @@ export default function ChatInterface() {
     link.click();
     document.body.removeChild(link);
   };
+
+
 
   // fetching add user dialogue data
   useEffect(() => {
@@ -1550,7 +1569,7 @@ export default function ChatInterface() {
                                               alt={file.name}
                                               className="w-full h-auto max-h-48 object-cover cursor-pointer"
                                               onClick={() =>
-                                                window.open(file.url, "_blank")
+                                                handleBase64Open(file)
                                               }
                                             />
                                           </div>
