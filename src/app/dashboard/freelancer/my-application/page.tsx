@@ -213,9 +213,9 @@ export default function AppliedJobsPage() {
 
       {/* Applications List */}
       <div className="space-y-4">
-        {filteredApplications.map((application) => (
+        {filteredApplications.map((application, index) => (
           <Card
-            key={application.id}
+            key={`${application.id}-${index}`}
             className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-shadow"
           >
             <CardContent className="p-6">

@@ -417,7 +417,7 @@ export default function JobDetailsPage({
               <Users className="h-4 w-4 text-gray-500 shrink-0" />
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm text-gray-600">Applications</p>
-                <p className="font-semibold text-sm sm:text-base">{applications.length}</p>
+                <p className="font-semibold text-sm sm:text-base">{applications.length || 0}</p>
               </div>
             </div>
           </CardContent>

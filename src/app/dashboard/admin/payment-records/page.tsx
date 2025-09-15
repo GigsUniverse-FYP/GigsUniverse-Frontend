@@ -140,13 +140,15 @@ export default function PaymentRecordsPage() {
 
   // Filter functions
   const filterSubscriptions = () => {
+    const search = (subscriptionSearch || "").toLowerCase();
     return subscriptions.filter(sub => {
       const matchesSearch = 
-        sub.userId.toLowerCase().includes(subscriptionSearch.toLowerCase()) ||
-        sub.userType.toLowerCase().includes(subscriptionSearch.toLowerCase()) ||
-        sub.stripeCustomerId.toLowerCase().includes(subscriptionSearch.toLowerCase()) ||
-        sub.stripeSubscriptionId.toLowerCase().includes(subscriptionSearch.toLowerCase()) ||
-        sub.stripeProductName.toLowerCase().includes(subscriptionSearch.toLowerCase())
+      (sub.userId || "").toLowerCase().includes(search) ||
+      (sub.userType || "").toLowerCase().includes(search) ||
+      (sub.stripeCustomerId || "").toLowerCase().includes(search) ||
+      (sub.stripeSubscriptionId || "").toLowerCase().includes(search) ||
+      (sub.stripeProductName || "").toLowerCase().includes(search);
+
       
       const matchesStatus = subscriptionStatusFilter === "all" || sub.status === subscriptionStatusFilter
       
@@ -155,12 +157,13 @@ export default function PaymentRecordsPage() {
   }
 
   const filterTransactions = () => {
+    const search = (transactionSearch || "").toLowerCase();
     return transactions.filter(trans => {
       const matchesSearch = 
-        trans.employerUserId.toLowerCase().includes(transactionSearch.toLowerCase()) ||
-        trans.stripePaymentIntentId.toLowerCase().includes(transactionSearch.toLowerCase()) ||
-        trans.stripeCheckoutSessionId.toLowerCase().includes(transactionSearch.toLowerCase()) ||
-        trans.description.toLowerCase().includes(transactionSearch.toLowerCase())
+        (trans.employerUserId || "").toLowerCase().includes(search) ||
+        (trans.stripePaymentIntentId || "").toLowerCase().includes(search) ||
+        (trans.stripeCheckoutSessionId || "").toLowerCase().includes(search) ||
+        (trans.description || "").toLowerCase().includes(search);
       
       const matchesStatus = transactionStatusFilter === "all" || trans.status === transactionStatusFilter
       
@@ -170,15 +173,16 @@ export default function PaymentRecordsPage() {
 
   const filterTransfers = () => {
     const now = new Date()
+    const search = (transferSearch || "").toLowerCase();
     return transferEvents.filter(transfer => {
       const matchesSearch = 
-        transfer.stripeEventId.toLowerCase().includes(transferSearch.toLowerCase()) ||
-        transfer.stripeTransferId.toLowerCase().includes(transferSearch.toLowerCase()) ||
-        transfer.destinationAccountId.toLowerCase().includes(transferSearch.toLowerCase()) ||
-        transfer.description.toLowerCase().includes(transferSearch.toLowerCase()) ||
-        transfer.taskId.toLowerCase().includes(transferSearch.toLowerCase()) ||
-        transfer.freelancerId.toLowerCase().includes(transferSearch.toLowerCase()) ||
-        transfer.employerId.toLowerCase().includes(transferSearch.toLowerCase())
+      (transfer.stripeEventId || "").toLowerCase().includes(search) ||
+      (transfer.stripeTransferId || "").toLowerCase().includes(search) ||
+      (transfer.destinationAccountId || "").toLowerCase().includes(search) ||
+      (transfer.description || "").toLowerCase().includes(search) ||
+      (transfer.taskId || "").toLowerCase().includes(search) ||
+      (transfer.freelancerId || "").toLowerCase().includes(search) ||
+      (transfer.employerId || "").toLowerCase().includes(search);
       
       const transferDate = new Date(transfer.createdAt)
       let matchesDate = true
