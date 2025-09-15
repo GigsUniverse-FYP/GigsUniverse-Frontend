@@ -49,7 +49,7 @@ export default function OAuthFail() {
       case "not_registered_with_google":
         return {
           title: "Wrong Sign-In Method",
-          message: "This email is not registered using Google. Try using email login instead.",
+          message: "This email is not registered using Google. Try using email and password login instead.",
           icon: <AlertTriangle className="w-10 h-10 text-yellow-600" />,
           bgColor: "bg-yellow-100",
           borderColor: "border-yellow-300",
