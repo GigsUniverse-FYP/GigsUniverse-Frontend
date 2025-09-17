@@ -46,7 +46,7 @@ export interface TaskWithFilesDTO {
   files: FileEntry[]
 }
 
-export const formatDate = (isoDate: string | undefined | null) => {
+const formatDate = (isoDate: string | undefined | null) => {
   if (!isoDate) return ""
   const date = new Date(isoDate)
   return date.toLocaleString("en-GB", {
