@@ -7,6 +7,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { XCircle, ArrowLeft, RefreshCw, Mail } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 
+export const dynamic = "force-dynamic";
+
 export default function VerifyEmailFail() {
   const [isResending, setIsResending] = useState(false)
   const [resendSuccess, setResendSuccess] = useState(false)

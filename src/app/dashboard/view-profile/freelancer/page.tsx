@@ -26,6 +26,8 @@ import { FilePreviewDialog } from "../../../components/freelancer_components/fil
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSearchParams } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 interface FileData {
   base64Data: string;
   fileName: string;

@@ -60,6 +60,8 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import CompanyDialog from "../../view-profile/company/page";
 
+export const dynamic = "force-dynamic";
+
 export interface Job {
   id: number;
   jobTitle: string;

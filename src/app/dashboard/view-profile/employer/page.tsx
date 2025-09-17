@@ -27,6 +27,8 @@ import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
 import CompanyDialog from "../company/page";
 
+export const dynamic = "force-dynamic";
+
 interface EmployerProfile {
   employerProfileId: string;
   fullName: string;

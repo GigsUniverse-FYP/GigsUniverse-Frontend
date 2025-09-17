@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { XCircle, ArrowLeft, RefreshCw, UserPlus, AlertTriangle } from "lucide-react"
 
+export const dynamic = "force-dynamic";
+
 export default function GoogleSignupFail() {
   const [isRetrying, setIsRetrying] = useState(false)
 

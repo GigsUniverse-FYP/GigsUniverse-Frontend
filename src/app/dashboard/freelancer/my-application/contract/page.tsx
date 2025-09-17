@@ -22,6 +22,8 @@ import { useSearchParams } from "next/navigation"
 import { useReactToPrint } from "react-to-print";
 import { toast } from "react-toastify"
 
+export const dynamic = "force-dynamic";
+
 const formatToDisplay = (isoString: string | null) => {
   if (!isoString) return "";
   const date = new Date(isoString);

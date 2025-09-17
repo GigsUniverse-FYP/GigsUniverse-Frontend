@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CheckCircle, ArrowRight, User } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 
+export const dynamic = "force-dynamic";
+
 export default function GoogleSignupSuccess() {
   const params = useSearchParams()
   const userId = params.get("id") || "your_id"

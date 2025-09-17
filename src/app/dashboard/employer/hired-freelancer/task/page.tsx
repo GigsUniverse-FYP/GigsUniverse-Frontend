@@ -12,6 +12,7 @@ import { toast } from "react-toastify"
 import Link from "next/link"
 import { AlertDialogHeader, AlertDialogFooter, AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog"
 
+export const dynamic = "force-dynamic";
 
 interface Task {
   taskId: number

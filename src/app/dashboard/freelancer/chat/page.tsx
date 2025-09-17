@@ -57,6 +57,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useSearchParams } from "next/navigation";
 
+export const dynamic = "force-dynamic";
 
 interface AvailableUser {
   id: string;

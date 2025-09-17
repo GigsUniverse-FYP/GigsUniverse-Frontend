@@ -7,6 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { User, MapPin, Mail, Phone, Calendar, Globe, Users } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 
+export const dynamic = "force-dynamic";
+
 interface LanguageProficiency {
   language: string
   proficiency: string

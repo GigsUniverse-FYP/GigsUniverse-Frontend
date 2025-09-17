@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Mail, RefreshCw } from "lucide-react"
 
+export const dynamic = "force-dynamic";
+
 export default function ConfirmEmail() {
   const searchParams = useSearchParams();
   const router = useRouter();

@@ -22,6 +22,8 @@ import { useSearchParams } from "next/navigation"
 import { toast } from "react-toastify"
 import { useReactToPrint } from "react-to-print";
 
+export const dynamic = "force-dynamic";
+
 export default function EmployerContractPage() {
   const contractRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
