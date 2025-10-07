@@ -101,6 +101,40 @@ export default function SupportTicketPage() {
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
   const [statusCounts, setStatusCounts] = useState<StatusCount[]>([]);
 
+    useEffect(() => {
+        const fetchPremiumStatus = async () => {
+          try {
+            const res = await fetch(`${backendUrl}/api/freelancer/subscription/premium-status`, {
+              method: "GET",
+              credentials: "include", 
+            })
+    
+            if (!res.ok) {
+              throw new Error("Failed to fetch premium status")
+            }
+    
+            const data: boolean = await res.json()
+  
+            if (data === true) {
+              setUserInfo(prev => prev ? { ...prev, isPremium: true } : { 
+                fullName: "",
+                email: "",
+                phoneNumber: "",
+                userRole: "",
+                isPremium: true
+              });
+            }
+  
+  
+          } catch (error) {
+            console.error(error)
+          }
+        }
+      
+          fetchPremiumStatus()
+        }, [])
+  
+
   const downloadFile = (fileName: string, fileBytes: string, contentType: string) => {
     // Convert base64 to bytes
     const byteCharacters = atob(fileBytes);
