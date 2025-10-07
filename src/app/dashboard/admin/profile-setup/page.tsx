@@ -149,10 +149,7 @@ export default function AdminProfileSetup() {
       });
 
       
-      formDataToSend.append(
-  "data",
-  new Blob([JSON.stringify(nonFileData)], { type: "application/json" })
-); // No Blob
+      formDataToSend.append('data', JSON.stringify(nonFileData)); // No Blob
 
         // Append files
         if (formData.profilePicture instanceof File) {
