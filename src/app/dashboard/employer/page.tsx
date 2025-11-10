@@ -313,7 +313,7 @@ export default function FreelancerDashboard() {
                 <div className="text-xs text-gray-500 font-medium">Total Payout</div>
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-gray-900">${payouts?.avgMonthly || 0}</div>
+                <div className="text-lg font-bold text-gray-900">${payouts?.avgMonthly.toFixed(2) || 0}</div>
                 <div className="text-xs text-gray-500 font-medium">Avg Monthly</div>
               </div>
               <div className="text-center">

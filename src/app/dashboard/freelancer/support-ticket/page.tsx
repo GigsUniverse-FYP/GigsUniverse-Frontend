@@ -563,7 +563,7 @@ export default function SupportTicketPage() {
                       <SelectItem value="medium">Medium - Needs attention soon</SelectItem>
                       <SelectItem value="high">High - Urgent issue</SelectItem>
                           {userInfo?.isPremium && (
-                            <SelectItem value="critical">
+                            <SelectItem value="premium">
                               Premium - All issues receive priority support
                             </SelectItem>
                           )}

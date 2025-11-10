@@ -351,7 +351,7 @@ export default function FreelancerTasksPage() {
 
   return (
     <div className="w-full sm:max-w-8xl min-w-[450px] mx-auto space-y-6 mb-5 -ml-20 sm:ml-0">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between gap-20 items-center">
         <h1 className="text-3xl font-bold text-gray-900">My Tasks </h1>
           <div className="mt-5 flex flex-col sm:flex-row gap-3">
             <Link href={`/dashboard/freelancer/chat?userId=${employerId}`} target="_blank" rel="noopener noreferrer">
